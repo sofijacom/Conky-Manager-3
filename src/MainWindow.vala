@@ -114,8 +114,8 @@ public class MainWindow : Window {
         
         //hbox_widget
         hbox_widget = new Box (Orientation.HORIZONTAL, 6);
-        hbox_widget.margin_left = 3;
-        hbox_widget.margin_right = 3;
+        hbox_widget.margin_start = 3;
+        hbox_widget.margin_end = 3;
 		vbox_main.add(hbox_widget);
 
 		//lbl_type
@@ -160,7 +160,7 @@ public class MainWindow : Window {
 		//add theme button
 		btn_add_theme = new Button.with_label(_("Save Theme"));
 		btn_add_theme.set_size_request(10,-1);
-		btn_add_theme.set_image(new Image.from_stock ("gtk-add", IconSize.MENU));
+		btn_add_theme.set_image(new Image.from_icon_name ("list-add", IconSize.MENU));
 		btn_add_theme.no_show_all = true;
 		btn_add_theme.set_tooltip_text(_("Save running widgets and current desktop wallpaper as new theme"));
 		hbox_widget.pack_start (btn_add_theme, false, true, 0);
@@ -283,7 +283,7 @@ public class MainWindow : Window {
 		vbox_main.add(toolbar);
 
 		//btn_prev
-		btn_prev = new Gtk.ToolButton.from_stock ("gtk-go-back");
+		btn_prev = new Gtk.ToolButton (new Image.from_icon_name ("go-previous", IconSize.LARGE_TOOLBAR), null);
 		btn_prev.is_important = false;
 		btn_prev.label = _("Previous");
 		btn_prev.set_tooltip_text (_("Previous Widget"));
@@ -292,7 +292,7 @@ public class MainWindow : Window {
         btn_prev.clicked.connect(btn_prev_clicked);
 
 		//btn_next
-		btn_next = new Gtk.ToolButton.from_stock ("gtk-go-forward");
+		btn_next = new Gtk.ToolButton (new Image.from_icon_name ("go-next", IconSize.LARGE_TOOLBAR), null);
 		btn_next.is_important = false;
 		btn_next.label = _("Next");
 		btn_next.set_tooltip_text (_("Next Widget"));
@@ -301,7 +301,7 @@ public class MainWindow : Window {
         btn_next.clicked.connect(btn_next_clicked);
 
 		//btn_start terminal
-		btn_start_terminal = new Gtk.ToolButton.from_stock ("gtk-media-play");
+		btn_start_terminal = new Gtk.ToolButton (new Image.from_icon_name ("media-playback-start", IconSize.LARGE_TOOLBAR), null);
 		btn_start_terminal.is_important = false;
 		btn_start_terminal.icon_widget = get_shared_icon("utilities-terminal","utilities-terminal.png",32);
 		btn_start_terminal.label = _("Terminal Start");
@@ -311,7 +311,7 @@ public class MainWindow : Window {
         btn_start_terminal.clicked.connect(btn_start_terminal_clicked);
 
 		//btn_start
-		btn_start = new Gtk.ToolButton.from_stock ("gtk-media-play");
+		btn_start = new Gtk.ToolButton (new Image.from_icon_name ("media-playback-start", IconSize.LARGE_TOOLBAR), null);
 		btn_start.is_important = false;
 		btn_start.label = _("Start");
 		btn_start.set_tooltip_text (_("Start/Restart Widget"));
@@ -320,7 +320,7 @@ public class MainWindow : Window {
         btn_start.clicked.connect(btn_start_clicked);
 
 		//btn_stop
-		btn_stop = new Gtk.ToolButton.from_stock ("gtk-media-stop");
+		btn_stop = new Gtk.ToolButton (new Image.from_icon_name ("media-playback-stop", IconSize.LARGE_TOOLBAR), null);
 		btn_stop.is_important = false;
 		btn_stop.label = _("Start");
 		btn_stop.set_tooltip_text (_("Stop Widget"));
@@ -334,7 +334,7 @@ public class MainWindow : Window {
 		toolbar.add(separator1);
 		
 		//btn_edit_gui
-		btn_edit_gui = new Gtk.ToolButton.from_stock ("gtk-preferences");
+		btn_edit_gui = new Gtk.ToolButton (new Image.from_icon_name ("document-properties", IconSize.LARGE_TOOLBAR), null);
 		btn_edit_gui.is_important = false;
 		btn_edit_gui.label = _("Edit");
 		btn_edit_gui.set_tooltip_text (_("Edit Widget"));
@@ -343,7 +343,7 @@ public class MainWindow : Window {
         btn_edit_gui.clicked.connect(btn_edit_gui_clicked);
         
 		//btn_edit
-		btn_edit = new Gtk.ToolButton.from_stock ("gtk-edit");
+		btn_edit = new Gtk.ToolButton (new Image.from_icon_name ("accessories-text-editor", IconSize.LARGE_TOOLBAR), null);
 		btn_edit.is_important = false;
 		btn_edit.label = _("Manual Edit");
 		btn_edit.set_tooltip_text (_("Edit file manually in a text editor"));
@@ -352,7 +352,7 @@ public class MainWindow : Window {
         btn_edit.clicked.connect(btn_edit_clicked);
 
 		//btn_open_dir
-		btn_open_dir = new Gtk.ToolButton.from_stock ("gtk-directory");
+		btn_open_dir = new Gtk.ToolButton (new Image.from_icon_name ("folder", IconSize.LARGE_TOOLBAR), null);
 		btn_open_dir.is_important = false;
 		btn_open_dir.label = _("Open Folder");
 		btn_open_dir.set_tooltip_text (_("Open Theme Folder"));
@@ -366,7 +366,7 @@ public class MainWindow : Window {
 		toolbar.add(separator2);
 
 		//btn_scan
-		btn_scan = new Gtk.ToolButton.from_stock ("gtk-refresh");
+		btn_scan = new Gtk.ToolButton (new Image.from_icon_name ("view-refresh", IconSize.LARGE_TOOLBAR), null);
 		btn_scan.is_important = false;
 		btn_scan.label = _("Refresh");
 		btn_scan.set_tooltip_text (_("Search for new themes"));
@@ -375,7 +375,7 @@ public class MainWindow : Window {
         btn_scan.clicked.connect(btn_scan_clicked);
         
 		//btn_generate_preview
-		btn_generate_preview = new Gtk.ToolButton.from_stock ("gtk-missing-image");
+		btn_generate_preview = new Gtk.ToolButton (new Image.from_icon_name ("image-x-generic", IconSize.LARGE_TOOLBAR), null);
 		btn_generate_preview.is_important = false;
 		btn_generate_preview.label = _("Generate Preview");
 		btn_generate_preview.set_tooltip_text (_("Generate preview images"));
@@ -386,7 +386,7 @@ public class MainWindow : Window {
         btn_generate_preview.clicked.connect(btn_generate_preview_clicked);
 
 		//btn_kill_all
-		btn_kill_all = new Gtk.ToolButton.from_stock ("gtk-cancel");
+		btn_kill_all = new Gtk.ToolButton (new Image.from_icon_name ("process-stop", IconSize.LARGE_TOOLBAR), null);
 		btn_kill_all.is_important = false;
 		btn_kill_all.label = _("Stop All Widgets");
 		btn_kill_all.set_tooltip_text (_("Stop all running widgets"));
@@ -395,7 +395,7 @@ public class MainWindow : Window {
         btn_kill_all.clicked.connect(btn_kill_all_clicked);
 
 		//btn_import_themes
-		btn_import_themes = new Gtk.ToolButton.from_stock ("gtk-open");
+		btn_import_themes = new Gtk.ToolButton (new Image.from_icon_name ("document-open", IconSize.LARGE_TOOLBAR), null);
 		btn_import_themes.is_important = false;
 		btn_import_themes.label = _("Import");
 		btn_import_themes.set_tooltip_text (_("Import Theme Pack (*.cmtp.7z) or various archive type"));
@@ -410,7 +410,7 @@ public class MainWindow : Window {
 		toolbar.add(separator);
 		
 		//btn_settings
-		btn_settings = new Gtk.ToolButton.from_stock ("gtk-preferences");
+		btn_settings = new Gtk.ToolButton (new Image.from_icon_name ("preferences-system", IconSize.LARGE_TOOLBAR), null);
 		btn_settings.is_important = false;
 		btn_settings.label = _("Settings");
 		btn_settings.set_tooltip_text (_("Application Settings"));
@@ -419,7 +419,7 @@ public class MainWindow : Window {
         btn_settings.clicked.connect(btn_settings_clicked);
 
         //btn_donate
-		btn_donate = new Gtk.ToolButton.from_stock ("gtk-dialog-info");
+		btn_donate = new Gtk.ToolButton (new Image.from_icon_name ("dialog-information", IconSize.LARGE_TOOLBAR), null);
 		btn_donate.is_important = false;
 		btn_donate.icon_widget = get_shared_icon("donate","donate.svg",32);
 		btn_donate.label = _("Funding");
@@ -429,7 +429,7 @@ public class MainWindow : Window {
         btn_donate.clicked.connect(() => { show_donation_window(false); });
         
         //btn_about
-		btn_about = new Gtk.ToolButton.from_stock ("gtk-about");
+		btn_about = new Gtk.ToolButton (new Image.from_icon_name ("help-about", IconSize.LARGE_TOOLBAR), null);
 		btn_about.is_important = false;
 		btn_about.label = _("About");
 		btn_about.set_tooltip_text (_("About"));
@@ -443,7 +443,6 @@ public class MainWindow : Window {
 		tv_widget = new TreeView();
 		tv_widget.get_selection().mode = SelectionMode.SINGLE;
 		tv_widget.headers_visible = false;
-		tv_widget.set_rules_hint (true);
 		
 		sw_widget = new ScrolledWindow(null, null);
 		sw_widget.set_shadow_type (ShadowType.ETCHED_IN);
@@ -494,7 +493,7 @@ public class MainWindow : Window {
 		img_preview = new Image();
 		ebox_preview = new EventBox();
 		ebox_preview.add(img_preview);
-		sw_preview.add_with_viewport(ebox_preview);
+		sw_preview.add(ebox_preview);
 	}
 	
 	private void init_keyboard_shortcuts(){
@@ -502,16 +501,20 @@ public class MainWindow : Window {
 
 			if (!toolbar.sensitive) { return false; }
 
-			if ((event.keyval == 65361)||(event.keyval == 65362)) {
+			if ((event.keyval == Gdk.Key.Left)||(event.keyval == Gdk.Key.Up)) {
 				btn_prev_clicked();
 				return false;
 			}
-			else if ((event.keyval == 65363)||(event.keyval == 65364)){
+			else if ((event.keyval == Gdk.Key.Right)||(event.keyval == Gdk.Key.Down)){
 				btn_next_clicked();
 				return false;
 			}
-			else if (event.keyval == 65293) {
-				if (selected_item().enabled){
+			else if (event.keyval == Gdk.Key.Return) {
+				var item = selected_item();
+				if (item == null){
+					return false;
+				}
+				if (item.enabled){
 					btn_stop_clicked();
 				}
 				else{
@@ -811,22 +814,19 @@ public class MainWindow : Window {
 		if (response == Gtk.ResponseType.OK){
 			switch(action){
 				case "current":
-					rclist_generate.add((ConkyRC)selected_item());
+					var item = selected_item();
+					if (item is ConkyRC){
+						rclist_generate.add((ConkyRC) item);
+					}
+					else if (item is ConkyTheme){
+						rclist_generate.add_all(((ConkyTheme) item).conkyrc_list);
+					}
 					break;
 				case "missing":
 					foreach(ConkyRC rc in App.conkyrc_list){
-						//check if image file is a "default" image
-						string[] ext_list = {".png",".jpg",".jpeg"};
-						foreach(string ext in ext_list){
-							string image_name = "preview" + ext;
-							if (rc.image_path.has_suffix(image_name)){ 
-								rclist_generate.add(rc);
-								continue;
-							}
-						}
-						
-						//check if image file is missing
-						if (!file_exists(rc.image_path)){
+						//image file is missing, or is a shared "default" image
+						string image_name = Path.get_basename(rc.image_path);
+						if (!file_exists(rc.image_path) || image_name.has_prefix("preview.")){
 							rclist_generate.add(rc);
 						}
 					}
@@ -853,20 +853,11 @@ public class MainWindow : Window {
 		is_aborted = false;
 
 		btn_cancel_action.clicked.connect(btn_cancel_action_generate_preview);
-		
-		try {
-			is_running = true;
-			Thread.create<void> (btn_generate_preview_clicked_thread, true);
-		} catch (ThreadError e) {
-			is_running = false;
-			log_error (e.message);
-		}
 
-		while(is_running){
-			Thread.usleep ((ulong) 200000);
-			gtk_do_events();
-		}
-				
+		gtk_set_busy(true, this);
+		generate_previews();
+		gtk_set_busy(false, this);
+
 		btn_cancel_action.clicked.disconnect(btn_cancel_action_generate_preview);
 		
 		progress_hide();
@@ -876,15 +867,6 @@ public class MainWindow : Window {
 		btn_list.active = show_list;
 		
 		//reload_themes();
-	}
-	
-	private void btn_generate_preview_clicked_thread(){
-		gtk_set_busy(true,this);
-		
-		generate_previews();
-		is_running = false;
-		
-		gtk_set_busy(false,this);
 	}
 	
 	private void generate_previews(){
@@ -943,21 +925,20 @@ public class MainWindow : Window {
 	private void btn_kill_all_clicked(){
 		App.kill_all_conky();
 		
-		TreeModel model = filterThemes;
 		TreeStore store = (TreeStore) filterThemes.child_model;
 		TreeIter iter;
 
-		bool iterExists = model.get_iter_first (out iter);
+		bool iterExists = store.get_iter_first (out iter);
 		while (iterExists){
 			store.set (iter, 0, false, -1);
-			iterExists = model.iter_next (ref iter);
+			iterExists = store.iter_next (ref iter);
 		}
 	}
 
 	private void btn_import_themes_clicked(){
 		var dlgAddFiles = new Gtk.FileChooserDialog(_("Import") + " (cmtp.7z; 7z; gz; bz2; xz; tar; zip; etc.)", this, Gtk.FileChooserAction.OPEN,
-							"gtk-cancel", Gtk.ResponseType.CANCEL,
-							"gtk-open", Gtk.ResponseType.ACCEPT);
+							_("_Cancel"), Gtk.ResponseType.CANCEL,
+							_("_Open"), Gtk.ResponseType.ACCEPT);
 		dlgAddFiles.local_only = true;
  		dlgAddFiles.set_modal (true);
  		dlgAddFiles.set_select_multiple (true);
@@ -1161,8 +1142,8 @@ public class MainWindow : Window {
 		
 		try {
 			is_running = true;
-			Thread.create<void> (scan_themes_thread, true);
-		} catch (ThreadError e) {
+			new Thread<void>.try ("scan-themes", scan_themes_thread);
+		} catch (Error e) {
 			is_running = false;
 			log_error (e.message);
 		}
@@ -1182,7 +1163,6 @@ public class MainWindow : Window {
 	
 	private void scan_themes_thread(){
 		App.load_themes_and_widgets();
-		reload_themes();
 		is_running = false;
 	}
 

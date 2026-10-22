@@ -637,16 +637,7 @@ namespace TeeJee.ProcessManagement{
 				
 		/* Returns the full path to a command */
 		
-		try {
-			int exitCode; 
-			string stdout, stderr;
-			Process.spawn_command_line_sync("which " + cmd, out stdout, out stderr, out exitCode);
-	        return stdout;
-		}
-		catch (Error e){
-	        log_error (e.message);
-	        return "";
-	    }
+		return Environment.find_program_in_path(cmd) ?? "";
 	}
 
 	public int get_pid_by_name (string name){
@@ -911,10 +902,10 @@ namespace TeeJee.GtkHelper{
 		Gdk.Cursor? cursor = null;
 
 		if (busy){
-			cursor = new Gdk.Cursor(Gdk.CursorType.WATCH);
+			cursor = new Gdk.Cursor.for_display(win.get_display(), Gdk.CursorType.WATCH);
 		}
 		else{
-			cursor = new Gdk.Cursor(Gdk.CursorType.ARROW);
+			cursor = new Gdk.Cursor.for_display(win.get_display(), Gdk.CursorType.ARROW);
 		}
 		
 		var window = win.get_window ();
@@ -1077,7 +1068,31 @@ namespace TeeJee.System{
 	public string get_desktop_name(){
 				
 		/* Return the names of the current Desktop environment */
-		
+
+		//prefer what the session reports, e.g. "X-Cinnamon", "ubuntu:GNOME", "Budgie:GNOME"
+		string xdg = (Environment.get_variable("XDG_CURRENT_DESKTOP") ?? "").down();
+		foreach(string name in xdg.split(":")){
+			switch(name){
+				case "x-cinnamon":
+				case "cinnamon":
+					return "Cinnamon";
+				case "xfce":
+					return "Xfce";
+				case "lxde":
+					return "LXDE";
+				case "mate":
+					return "MATE";
+				case "unity":
+					return "Unity";
+				case "kde":
+					return "KDE";
+				case "pantheon":
+				case "budgie":
+				case "gnome":
+					return "Gnome";
+			}
+		}
+
 		int pid = -1;
 		
 		pid = get_pid_by_name("cinnamon");
@@ -1111,6 +1126,11 @@ namespace TeeJee.System{
 		}
 
 		pid = get_pid_by_name("plasma-desktop");
+		if (pid > 0){
+			return "KDE";
+		}
+
+		pid = get_pid_by_name("plasmashell");
 		if (pid > 0){
 			return "KDE";
 		}

@@ -443,7 +443,7 @@ public class EditWidgetWindow : Dialog {
 		
 		//btn_apply_changes
 		btn_apply_changes = new Button.with_label("  " + _("Apply"));
-		btn_apply_changes.set_image (new Image.from_stock ("gtk-apply", IconSize.MENU));
+		btn_apply_changes.set_image (new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
         btn_apply_changes.clicked.connect (btn_apply_changes_clicked);
         btn_apply_changes.set_tooltip_text (_("Apply Changes"));
         //btn_apply_changes.set_size_request(-1,30);
@@ -451,7 +451,7 @@ public class EditWidgetWindow : Dialog {
 		
 		//btn_discard_changes
 		btn_discard_changes = new Button.with_label("  " + _("Reset"));
-		btn_discard_changes.set_image (new Image.from_stock ("gtk-clear", IconSize.MENU));
+		btn_discard_changes.set_image (new Image.from_icon_name ("edit-clear", IconSize.MENU));
         btn_discard_changes.clicked.connect (btn_discard_changes_clicked);
         btn_discard_changes.set_tooltip_text (_("Reset Changes"));
         //btn_discard_changes.set_size_request(-1,30);
@@ -459,7 +459,7 @@ public class EditWidgetWindow : Dialog {
 
 		//btn_cancel_changes
 		btn_cancel_changes = new Button.with_label("  " + _("Close"));
-		btn_cancel_changes.set_image (new Image.from_stock ("gtk-cancel", IconSize.MENU));
+		btn_cancel_changes.set_image (new Image.from_icon_name ("window-close", IconSize.MENU));
         btn_cancel_changes.clicked.connect (btn_cancel_changes_clicked);
         btn_cancel_changes.set_tooltip_text (_("Discard Changes"));
         //btn_cancel_changes.set_size_request(-1,30);

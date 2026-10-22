@@ -58,8 +58,8 @@ public class DonationWindow : Dialog {
 
 		//vbox_actions
 		Grid vbox_actions = new Grid ();
-		vbox_actions.margin_left = 10;
-		vbox_actions.margin_right = 10;
+		vbox_actions.margin_start = 10;
+		vbox_actions.margin_end = 10;
 		vbox_actions.margin_top = 10;
 		//vbox_actions.set_row_spacing = 5;
 		//vbox_actions.set_column_spacing = 5;

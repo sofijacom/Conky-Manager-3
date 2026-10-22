@@ -159,7 +159,6 @@ public class SettingsWindow : Dialog {
 		tv_folders = new TreeView();
 		tv_folders.get_selection().mode = SelectionMode.MULTIPLE;
 		tv_folders.headers_visible = false;
-		tv_folders.set_rules_hint (true);
 
 		//sw_folders
 		ScrolledWindow sw_folders = new ScrolledWindow(null, null);
@@ -178,7 +177,7 @@ public class SettingsWindow : Dialog {
 		col_path.pack_start (cell_margin, false);
 		
 		CellRendererPixbuf cell_icon = new CellRendererPixbuf ();
-		cell_icon.stock_id = "gtk-directory";
+		cell_icon.icon_name = "folder";
 		col_path.pack_start (cell_icon, false);
 		
 		CellRendererText cell_text = new CellRendererText ();
@@ -197,13 +196,13 @@ public class SettingsWindow : Dialog {
         
 		//btn_add_folder
 		btn_add_folder = new Button.with_label("  " + _("Add"));
-		btn_add_folder.set_image (new Image.from_stock ("gtk-add", IconSize.MENU));
+		btn_add_folder.set_image (new Image.from_icon_name ("list-add", IconSize.MENU));
         btn_add_folder.clicked.connect (btn_add_folder_clicked);
 		hbox_folder_actions.add(btn_add_folder);
 
 		//btn_remove_folder
 		btn_remove_folder = new Button.with_label("  " + _("Remove"));
-		btn_remove_folder.set_image (new Image.from_stock ("gtk-remove", IconSize.MENU));
+		btn_remove_folder.set_image (new Image.from_icon_name ("list-remove", IconSize.MENU));
         btn_remove_folder.clicked.connect (btn_remove_folder_clicked);
 		hbox_folder_actions.add(btn_remove_folder);
 		
@@ -213,13 +212,13 @@ public class SettingsWindow : Dialog {
 		
 		//btn_apply_changes
 		btn_apply_changes = new Button.with_label("  " + _("OK"));
-		btn_apply_changes.set_image (new Image.from_stock ("gtk-apply", IconSize.MENU));
+		btn_apply_changes.set_image (new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
         btn_apply_changes.clicked.connect (btn_apply_changes_clicked);
 		hbox_action.add(btn_apply_changes);
 		
 		//btn_cancel_changes
 		btn_cancel_changes = new Button.with_label("  " + _("Cancel"));
-		btn_cancel_changes.set_image (new Image.from_stock ("gtk-cancel", IconSize.MENU));
+		btn_cancel_changes.set_image (new Image.from_icon_name ("window-close", IconSize.MENU));
         btn_cancel_changes.clicked.connect (btn_cancel_changes_clicked);
 		hbox_action.add(btn_cancel_changes);
 		
@@ -268,8 +267,8 @@ public class SettingsWindow : Dialog {
 
 	private SList<string> browse_folder(){
 		var dialog = new Gtk.FileChooserDialog(_("Select directory"), this, Gtk.FileChooserAction.OPEN,
-							"gtk-cancel", Gtk.ResponseType.CANCEL,
-							"gtk-open", Gtk.ResponseType.ACCEPT);
+							_("_Cancel"), Gtk.ResponseType.CANCEL,
+							_("_Open"), Gtk.ResponseType.ACCEPT);
 		dialog.action = FileChooserAction.SELECT_FOLDER;
 		dialog.local_only = true;
 		dialog.set_transient_for(this);

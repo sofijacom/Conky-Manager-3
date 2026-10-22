@@ -11,7 +11,7 @@
  libgettextpo-dev
 
 ## additional required run time packages:
- p7zip-full
+ p7zip-full (or 7zip)
  imagemagick
 
 ## here is a one-shot installation command for all of the above packages:

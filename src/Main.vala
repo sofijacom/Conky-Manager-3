@@ -37,15 +37,13 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager";
 public const string AppShortName = "conky-manager2";
-public const string AppVersion = "2.73";
+public const string AppVersion = "2.74";
 public const string AppAuthor = "Tony George";
 public const string AppAuthorEmail = "teejeetech@gmail.com";
 public const string AppAuthorEmail2 = "zcotcaudle@gmail.com";
 
 const string GETTEXT_PACKAGE = "conky-manager2";
 const string LOCALE_DIR = "/usr/share/locale";
-
-extern void exit(int exit_code);
 
 public class Main : GLib.Object {
 
@@ -133,7 +131,6 @@ public class Main : GLib.Object {
 		if (!check_dependencies(out message)){
 			string title = _("Missing Dependencies");
 			gtk_messagebox(title, message, null, true);
-			exit(0);
 		}
 
 		//get desktop ---------------
@@ -151,25 +148,40 @@ public class Main : GLib.Object {
 	public bool check_dependencies(out string msg){
 		msg = "";
 
-		string[] dependencies = { "conky", "rsync","killall","cp","rm","touch","7za","import" };
+		//tool -> feature that needs it; nothing here is needed just to browse widgets
+		string[,] dependencies = {
+			{ "conky", _("Starting widgets") },
+			{ "rsync", _("Scanning and importing themes") },
+			{ "killall", _("Stopping all widgets") },
+			{ get_7zip_cmd(), _("Importing theme packs") },
+			{ "import", _("Generating previews (ImageMagick)") }
+		};
 
-		string path;
-		foreach(string cmd_tool in dependencies){
-			path = get_cmd_path (cmd_tool);
-			if ((path == null) || (path.length == 0)){
-				msg += " * " + cmd_tool + "\n";
+		for(int i = 0; i < dependencies.length[0]; i++){
+			if (Environment.find_program_in_path(dependencies[i,0]) == null){
+				msg += " * %s  (%s)\n".printf(dependencies[i,0], dependencies[i,1]);
 			}
 		}
 
 		if (msg.length > 0){
 			msg = _("Commands listed below are not available") + ":\n\n" + msg + "\n";
-			msg += _("Please install required packages and try running it again");
-			log_error(msg);
+			msg += _("The features listed next to them will not work until the required packages are installed.");
+			log_error(msg, false, true);
 			return false;
 		}
 		else{
 			return true;
 		}
+	}
+
+	/* p7zip ships '7za'; the newer 7-Zip packages ship '7z' or '7zz' */
+	public static string get_7zip_cmd(){
+		foreach(string cmd in new string[]{ "7za", "7z", "7zz" }){
+			if (Environment.find_program_in_path(cmd) != null){
+				return cmd;
+			}
+		}
+		return "7za";
 	}
 
 	public void save_app_config(){
@@ -366,14 +378,15 @@ public class Main : GLib.Object {
 		//unzip
 		cmd = "cd \"" + temp_dir + "\"\n";
 		if (tarformat) 
-            cmd += "7za x -so \"" + pkgPath + "\"  | tar xf - >nul\n";
+            cmd += "%s x -so \"%s\" | tar xf - >/dev/null\n".printf(get_7zip_cmd(), pkgPath);
 		else
-            cmd += "7za x \"" + pkgPath + "\">nul\n";
+            cmd += "%s x \"%s\" >/dev/null\n".printf(get_7zip_cmd(), pkgPath);
 
 		ret_val = execute_command_script_sync(cmd, out std_out, out std_err);
 		if (ret_val != 0){
 			log_error(_("Failed to unzip files from theme pack"));
 			log_error (std_err);
+			Posix.system("rm -rf \"" + temp_dir + "\"");
 			return false;
 		}
 
@@ -450,7 +463,7 @@ public class Main : GLib.Object {
 	public void find_conkyrc_files_in_path(string path){
 		string std_out = "";
 		string std_err = "";
-		string cmd = "grep -r \"^[[:blank:]]*TEXT[[:blank:]]*$\\|conky\\.text[[:blank:]]*=\" \"%s\"".printf(path);
+		string cmd = "grep -rlI \"^[[:blank:]]*TEXT[[:blank:]]*$\\|conky\\.text[[:blank:]]*=\" \"%s\"".printf(path);
 		last_cmd = cmd;
 		int exit_code = execute_command_script_sync(cmd, out std_out, out std_err);
 
@@ -459,11 +472,10 @@ public class Main : GLib.Object {
 			return;
 		}
 
-		string file_path;
 		foreach(string line in std_out.split("\n")){
-			if (line.index_of(":") > -1){
-				file_path = line.split(":")[0].strip();
-				if (file_path.strip().has_suffix("~")){ continue; }
+			string file_path = line.strip();
+			if (file_path.length > 0){
+				if (file_path.has_suffix("~")){ continue; }
 
 				bool found = false;
 				foreach(ConkyConfigItem item in conkyrc_list){
@@ -583,27 +595,9 @@ public class Main : GLib.Object {
 	}
 
 	public void refresh_conkyrc_status() {
-		Gee.ArrayList<string> active_list = new Gee.ArrayList<string>();
-
-		string cmd = "conky -c "; //without double-quotes
-		string txt = execute_command_sync_get_output ("ps w -C conky");
-		//use 'ps ew -C conky' for all users
-
-		foreach(string line in txt.split("\n")){
-			if (line.index_of(cmd) != -1){
-				string conf = line.substring(line.index_of(cmd) + 8).strip();
-				active_list.add(conf);
-			}
-		}
-
+		var running = get_running_conky_configs();
 		foreach(ConkyRC rc in conkyrc_list){
-			bool active = false;
-			foreach(string path in active_list){
-				if (rc.path == path){
-					active = true;
-				}
-			}
-			rc.enabled = active;
+			rc.enabled = running.values.contains(rc.path);
 		}
 	}
 
@@ -626,8 +620,7 @@ public class Main : GLib.Object {
 	public void update_startup_script(){
 		string startupScript = data_dir + "/conky-startup.sh";
 		string home = Environment.get_home_dir ();
-        unowned string desktop_session = Environment.get_variable ("DESKTOP_SESSION");
-        if (desktop_session == "(null)") desktop_session = "";
+        string desktop_session = Environment.get_variable ("DESKTOP_SESSION") ?? "";
 		bool atleast_one_widget_enabled = false;
 
 		string txt_start_conky = "";
@@ -658,21 +651,11 @@ public class Main : GLib.Object {
 		string cmd2 = "sed -i -r '/^[[:space:]]*if[[:space:]]+\\[[[:space:]]+\"?\\$\\{?DESKTOP_SESSION\\}?\"?[[:space:]]*==?[[:space:]]*\"%s\"[[:space:]]+\\]/,/^[[:space:]]*fi/d' \"%s\"".printf (desktop_session, startupScript);
 
 		if (file_exists(startupScript)){
-			try{
-				execute_command_script_sync(cmd1, out std_out, out std_err);
-			}
-			catch (Error e) {
-				log_error (e.message);
-			}
-		}	
+			execute_command_script_sync(cmd1, out std_out, out std_err);
+		}
 
 		if (file_exists(startupScript)){
-			try{
-				execute_command_script_sync(cmd2, out std_out, out std_err);
-			}
-			catch (Error e) {
-				log_error (e.message);
-			}
+			execute_command_script_sync(cmd2, out std_out, out std_err);
 		} else {
 			write_file(startupScript, "#!/bin/sh\n\n"); // write shebang 
 		}	
@@ -726,6 +709,90 @@ Comment=
 		}
 		log_msg("Stopping all conkys... OK");
 	}
+}
+
+/* Returns a map of PID -> absolute config path for every conky process owned
+ * by the current user. Reads /proc directly so that config paths containing
+ * spaces, very long command lines and configs whose path is a prefix of another
+ * config's path (e.g. "conkyrc" and "conkyrc2") are all matched exactly. */
+public Gee.HashMap<int,string> get_running_conky_configs(){
+	var map = new Gee.HashMap<int,string>();
+	uint uid = (uint) Posix.getuid();
+
+	Dir proc_dir;
+	try{
+		proc_dir = Dir.open("/proc");
+	}
+	catch (FileError e){
+		log_error(e.message);
+		return map;
+	}
+
+	string? name;
+	while ((name = proc_dir.read_name()) != null){
+		int pid = int.parse(name);
+		if (pid <= 0){ continue; }
+
+		string proc_path = "/proc/" + name;
+		Posix.Stat st;
+		if ((Posix.stat(proc_path, out st) != 0) || (st.st_uid != uid)){ continue; }
+
+		uint8[] data;
+		try{
+			FileUtils.get_data(proc_path + "/cmdline", out data);
+		}
+		catch (FileError e){
+			continue; //process exited
+		}
+
+		//split NUL-separated argv
+		var argv = new Gee.ArrayList<string>();
+		var sb = new StringBuilder();
+		foreach(uint8 b in data){
+			if (b == 0){
+				argv.add(sb.str);
+				sb.truncate(0);
+			}
+			else{
+				sb.append_c((char) b);
+			}
+		}
+		if (sb.len > 0){ argv.add(sb.str); }
+
+		if ((argv.size == 0) || (GLib.Path.get_basename(argv[0]) != "conky")){ continue; }
+
+		string conf = "";
+		for(int i = 1; i < argv.size; i++){
+			string arg = argv[i];
+			if (((arg == "-c") || (arg == "--config")) && (i + 1 < argv.size)){
+				conf = argv[i + 1];
+				break;
+			}
+			else if (arg.has_prefix("--config=")){
+				conf = arg.substring(9);
+				break;
+			}
+			else if (arg.has_prefix("-c") && !arg.has_prefix("--")){
+				conf = arg.substring(2);
+				break;
+			}
+		}
+		if (conf == ""){ continue; }
+
+		//resolve relative config paths against the process working directory
+		if (!GLib.Path.is_absolute(conf)){
+			try{
+				conf = GLib.Path.build_filename(FileUtils.read_link(proc_path + "/cwd"), conf);
+			}
+			catch (FileError e){
+				continue;
+			}
+		}
+
+		map[pid] = conf;
+	}
+
+	return map;
 }
 
 public abstract class ConkyConfigItem: GLib.Object{
@@ -894,18 +961,7 @@ public class ConkyRC : ConkyConfigItem {
 	}
 
 	public bool is_running(){
-		string cmd = "conky -c " + path; //without double-quotes
-		string txt = execute_command_sync_get_output ("ps w -C conky");
-		//use 'ps ew -C conky' for all users
-
-		bool active = false;
-		foreach(string line in txt.split("\n")){
-			if (line.index_of(cmd) != -1){
-				active = true;
-				break;
-			}
-		}
-		return active;
+		return get_running_conky_configs().values.contains(path);
 	}
 
 	public override void start(){
@@ -953,25 +1009,21 @@ public class ConkyRC : ConkyConfigItem {
 	}
 
 	public bool stop_handler(){
+		timer_stop = 0;
 		stop();
-		return true;
+		return false; //one-shot
 	}
 
 	public override void stop(){
 
 		//Note: There may be more than one running instance of the same config
-		//We need to kill all instances
+		//We need to kill all instances, including one started for preview generation
 
-		string cmd = "conky -c " + path; //without double-quotes
-		string txt = execute_command_sync_get_output ("ps w -C conky");
-		//use 'ps ew -C conky' for all users
-
-		string pid = "";
-		foreach(string line in txt.split("\n")){
-			if (line.index_of(cmd) != -1){
-				pid = line.strip().split(" ")[0];
-				Posix.kill ((Pid) int.parse(pid), 15);
-				log_debug(_("Stopped") + ": [PID=" + pid + "] " + path);
+		var running = get_running_conky_configs();
+		foreach(int pid in running.keys){
+			if ((running[pid] == path) || (running[pid] == path + "~temp~")){
+				Posix.kill((Pid) pid, Posix.Signal.TERM);
+				log_debug(_("Stopped") + ": [PID=%d] %s".printf(pid, path));
 			}
 		}
 
@@ -1027,18 +1079,20 @@ public class ConkyRC : ConkyConfigItem {
 			}
 		}
 		
-		try {
-			thread_is_running = true;
-			Thread.create<void> (generate_preview_thread, true);
-		} catch (ThreadError e) {
-			thread_is_running = false;
-			log_error (e.message);
-		}
+		//the reader thread clears thread_is_running when conky exits
+		thread_is_running = start_preview_conky();
 
 		while (thread_is_running){
 			Thread.usleep ((ulong) 200000);
 			gtk_do_events();
 		}
+
+		if (timer_stop > 0){
+			Source.remove(timer_stop);
+			timer_stop = 0;
+		}
+
+		delete_file_temp();
 
 		//check if file was generated
 		if ((image_path.length > 0) && (file_exists(image_path))){
@@ -1051,7 +1105,9 @@ public class ConkyRC : ConkyConfigItem {
 		}
 	}
 
-	public void generate_preview_thread (){
+	/* Starts conky on the temp config and a thread that watches its output for
+	 * the window ID. Returns false if conky could not be started. */
+	private bool start_preview_conky(){
 		string cmd = "cd \"" + dir + "\"\n";
 		cmd += "conky -c \"" + path + "~temp~\" 2>&1 \n";
 
@@ -1064,7 +1120,6 @@ public class ConkyRC : ConkyConfigItem {
 		int error_fd;
 
 		try {
-			//execute script file
 			Process.spawn_async_with_pipes(
 			    null, //working dir
 			    argv, //argv
@@ -1075,36 +1130,32 @@ public class ConkyRC : ConkyConfigItem {
 			    out input_fd,
 			    out output_fd,
 			    out error_fd);
-
-			thread_is_running = true;
-
-			timer_stop = Timeout.add (10 * 1000, stop_handler);
-
-			//create stream readers
-			UnixInputStream uis_out = new UnixInputStream(output_fd, false);
-			UnixInputStream uis_err = new UnixInputStream(error_fd, false);
-			dis_out = new DataInputStream(uis_out);
-			dis_err = new DataInputStream(uis_err);
-			dis_out.newline_type = DataStreamNewlineType.ANY;
-			dis_err.newline_type = DataStreamNewlineType.ANY;
-
-        	try {
-				//start thread for reading output stream
-			    Thread.create<void> (conky_read_output_line, true);
-		    } catch (Error e) {
-		        log_error (e.message);
-		    }
-
-		    try {
-				//start thread for reading error stream
-			    Thread.create<void> (conky_read_error_line, true);
-		    } catch (Error e) {
-		        log_error (e.message);
-		    }
 		}
 		catch (Error e) {
 			log_error (e.message);
+			return false;
 		}
+
+		//give up if conky never shows a window
+		timer_stop = Timeout.add_seconds (10, stop_handler);
+
+		//create stream readers
+		dis_out = new DataInputStream(new UnixInputStream(output_fd, true));
+		dis_err = new DataInputStream(new UnixInputStream(error_fd, true));
+		dis_out.newline_type = DataStreamNewlineType.ANY;
+		dis_err.newline_type = DataStreamNewlineType.ANY;
+
+		try {
+			new Thread<void>.try ("conky-preview-err", conky_read_error_line);
+			new Thread<void>.try ("conky-preview-out", conky_read_output_line);
+		}
+		catch (Error e) {
+			log_error (e.message);
+			stop();
+			return false;
+		}
+
+		return true;
 	}
 
 	private void conky_read_error_line(){
@@ -1126,7 +1177,7 @@ public class ConkyRC : ConkyConfigItem {
 		    while (out_line != null) {
 				if (rex_conky_win.match (out_line, 0, out match)){
 
-					//wait for one second till window is displayed on screen
+					//wait till window is drawn on screen
 					Thread.usleep ((ulong) wait_interval * 1000000);
 
 					string win_id = match.fetch(1).strip();
@@ -1145,21 +1196,16 @@ public class ConkyRC : ConkyConfigItem {
 
 					Thread.usleep ((ulong) 100000); //wait 100ms before killing conky
 
-					if (timer_stop > 0){
-						Source.remove(timer_stop);
-						timer_stop = 0;
-					}
 					stop();
 				}
 				out_line = dis_out.read_line (null);  //read next
 			}
-
-			thread_is_running = false;
-			delete_file_temp();
 		}
 		catch (Error e) {
 			log_error (e.message);
 		}
+
+		thread_is_running = false;
 	}
 
 	public string alignment{
@@ -1491,7 +1537,7 @@ public class ConkyRC : ConkyConfigItem {
 			}
 
 			//count empty lines at end of text section
-			for(k=k; k >= 0; k--){
+			for(; k >= 0; k--){
 				if (arr[k].strip() == ""){
 					count++;
 				}
@@ -1674,37 +1720,96 @@ public class ConkyRC : ConkyConfigItem {
 		}
 	}
 
+	/* Returns the lower-cased value of a config setting, or "" if not set */
 	public string get_value(string param){
+		return get_raw_value(param).down();
+	}
+
+	/* Returns the value of a config setting as written in the file (quotes and
+	 * trailing comma removed). Only the settings section is searched, so lines
+	 * in the TEXT section that happen to start with a setting name are ignored. */
+	private string get_raw_value(string param){
 		foreach(string line in this.text.split("\n")){
-			string s = line.down().strip();
-			if (s.has_prefix(param)){
-				if (s.index_of("=") != -1){
-					return s[s.index_of("=")+1:s.length].strip().split(",")[0].replace("\'", " ").replace("\"", " ").strip();
-				}
-				else if (s.index_of(" ") != -1){
-					return s[s.index_of(" ")+1:s.length].strip();
-				}
-				else if (s.index_of("\t") != -1){
-					return s[s.index_of("\t")+1:s.length].replace("\t"," ").strip();
-				}
+			string s = line.strip();
+			if (is_text_section_start(s)){ break; }
+			if (!line_has_key(s, param)){ continue; }
+
+			string val = s.substring(param.length).strip();
+			if (one_ten_config){
+				if (val.has_prefix("=")){ val = val.substring(1).strip(); }
+				val = val.split(",")[0].replace("\'", " ").replace("\"", " ").strip();
 			}
+			return val.replace("\t", " ").strip();
 		}
 
 		return "";
 	}
 
+	private bool is_text_section_start(string stripped_line){
+		return (stripped_line == "TEXT") || stripped_line.has_prefix("conky.text");
+	}
+
+	/* true if the line sets 'param' (and not some longer setting starting with the same name) */
+	private bool line_has_key(string stripped_line, string param){
+		if (!stripped_line.down().has_prefix(param)){ return false; }
+		if (stripped_line.length == param.length){ return true; }
+		char next = stripped_line[param.length];
+		return (next == ' ') || (next == '\t') || (next == '=');
+	}
+
+	/* Formats a value for a Lua (1.10+) config: numbers and booleans bare,
+	 * anything else (including colours such as 000000) quoted */
+	private string lua_value(string param, string val){
+		if ((val == "true") || (val == "false") || (val == "nil")){ return val; }
+		double d;
+		bool is_colour = param.contains("colour") || param.contains("color");
+		bool leading_zero = (val.length > 1) && (val[0] == '0') && (val[1] != '.');
+		if (!is_colour && !leading_zero && double.try_parse(val, out d)){ return val; }
+		return "'" + val.replace("'", "\\'") + "'";
+	}
+
 	public void set_value(string param, string newLine){
 		string newText = "";
 		bool found = false;
+		bool in_settings = true;
 		bool remove = (newLine.strip() == param);
+		string new_val = newLine.strip().substring(param.length).strip();
+
+		bool has_key = false;
+		foreach(string line in this.text.split("\n")){
+			string s = line.strip();
+			if (is_text_section_start(s)){ break; }
+			if (line_has_key(s, param)){
+				has_key = true;
+				break;
+			}
+		}
 
 		foreach(string line in this.text.split("\n")){
-			string s = line.down().strip();
-			if (s.has_prefix(param)){
+			string s = line.strip();
+
+			if (in_settings && is_text_section_start(s)){
+				in_settings = false;
+				if (!found && !remove && !one_ten_config){
+					//insert line before TEXT
+					newText += newLine + "\n";
+					found = true;
+				}
+				newText += line + "\n";
+			}
+			else if (in_settings && !found && line_has_key(s, param)){
 				if (!remove){
 					//replace line
 					if (one_ten_config){
-						newText += line.replace(get_value(param), newLine.split(" ")[1]) + "\n";
+						//keep indentation, quoting and trailing comments; replace the value only
+						string old_val = get_raw_value(param);
+						int eq = line.index_of("=");
+						if ((eq > -1) && (old_val != "")){
+							newText += line[0:eq + 1] + line.substring(eq + 1).replace(old_val, new_val) + "\n";
+						}
+						else{
+							newText += line[0:line.length - line.chug().length] + param + " = " + lua_value(param, new_val) + ",\n";
+						}
 					}
 					else{
 						newText += newLine + "\n";
@@ -1712,17 +1817,10 @@ public class ConkyRC : ConkyConfigItem {
 				}
 				found = true;
 			}
-			else if ((s == "text")&&(!found)){
-				if (!remove){
-					//insert line
-					if (one_ten_config){
-						newText += newLine.split(" ")[0] + " = " + newLine.split(" ")[1] + ",\n";
-					}
-					else{
-						newText += newLine + "\n";
-					}
-				}
+			else if (in_settings && !found && !has_key && !remove && one_ten_config && s.has_prefix("conky.config") && s.has_suffix("{")){
+				//insert as first entry of the conky.config table
 				newText += line + "\n";
+				newText += "    " + param + " = " + lua_value(param, new_val) + ",\n";
 				found = true;
 			}
 			else{
@@ -1917,10 +2015,21 @@ public class ConkyTheme : ConkyConfigItem {
 						execute_command_sync("pcmanfm --wallpaper-mode '%s'".printf(get_scaling_value_for_desktop()));
 					}
 					break;
+				case "mate":
+					if (execute_command_sync("gsettings get org.mate.background picture-filename") == 0){
+						execute_command_sync("gsettings set org.mate.background picture-filename '%s'".printf(wallpaper_path));
+						execute_command_sync("gsettings set org.mate.background picture-options '%s'".printf(get_scaling_value_for_desktop()));
+					}
+					break;
 				case "gnome":
 				case "unity":
 					if (execute_command_sync("gsettings get org.gnome.desktop.background picture-uri") == 0){
 						execute_command_sync("gsettings set org.gnome.desktop.background picture-uri 'file://%s'".printf(wallpaper_path));
+					}
+
+					//GNOME 42+ uses a separate wallpaper in dark mode
+					if (execute_command_sync("gsettings get org.gnome.desktop.background picture-uri-dark") == 0){
+						execute_command_sync("gsettings set org.gnome.desktop.background picture-uri-dark 'file://%s'".printf(wallpaper_path));
 					}
 
 					if (execute_command_sync("gsettings get org.gnome.desktop.background picture-options") == 0){
@@ -1958,6 +2067,8 @@ public class ConkyTheme : ConkyConfigItem {
 		//return mapped value
 		switch (App.desktop){
 			case "gnome":
+			case "unity":
+			case "mate":
 			case "cinnamon":
 				return App.bg_scaling_gnome[index];
 			case "xfce":
@@ -1972,10 +2083,14 @@ public class ConkyTheme : ConkyConfigItem {
 
 	public string get_current_wallpaper(){
 		switch (App.desktop){
+			case "mate":
+				string val = execute_command_sync_get_output("gsettings get org.mate.background picture-filename").strip();
+				return val[1:val.length-1]; //remove quotes
 			case "gnome":
 			case "cinnamon":
 			case "unity":
-				string val = execute_command_sync_get_output("gsettings get org.%s.desktop.background picture-uri".printf(App.desktop));
+				string schema = (App.desktop == "cinnamon") ? "cinnamon" : "gnome";
+				string val = execute_command_sync_get_output("gsettings get org.%s.desktop.background picture-uri".printf(schema));
 				val = val[1:val.length-2]; //remove quotes
 				val = val[7:val.length]; //remove prefix file://
 				return uri_decode(val.strip());

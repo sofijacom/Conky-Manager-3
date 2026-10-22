@@ -123,7 +123,7 @@ public class GeneratePreviewWindow : Dialog {
 		
 		//btn_ok
 		btn_ok = new Button.with_label("  " + _("OK"));
-		btn_ok.set_image(new Image.from_stock ("gtk-ok", IconSize.MENU));
+		btn_ok.set_image(new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
 		
         btn_ok.clicked.connect(()=>{ 
 			if (optGenerateCurrent.active){
@@ -146,7 +146,7 @@ public class GeneratePreviewWindow : Dialog {
 		
 		//btn_cancel
 		btn_cancel = new Button.with_label("  " + _("Cancel"));
-		btn_cancel.set_image (new Image.from_stock ("gtk-cancel", IconSize.MENU));
+		btn_cancel.set_image (new Image.from_icon_name ("window-close", IconSize.MENU));
         btn_cancel.clicked.connect(()=>{ this.response(Gtk.ResponseType.CANCEL); });
 		hbox_action.add(btn_cancel);
 	}

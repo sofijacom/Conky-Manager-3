@@ -203,14 +203,14 @@ public class EditThemeWindow : Dialog {
 		
 		//btn_ok
 		btn_ok = new Button.with_label("  " + _("OK"));
-		btn_ok.set_image(new Image.from_stock ("gtk-ok", IconSize.MENU));
+		btn_ok.set_image(new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
 		hbox_action.add(btn_ok);	
 			
         btn_ok.clicked.connect(btn_ok_clicked);
 
 		//btn_cancel
 		btn_cancel = new Button.with_label("  " + _("Cancel"));
-		btn_cancel.set_image (new Image.from_stock ("gtk-cancel", IconSize.MENU));
+		btn_cancel.set_image (new Image.from_icon_name ("window-close", IconSize.MENU));
 		hbox_action.add(btn_cancel);
 		
 		btn_cancel.clicked.connect(()=>{ this.response(Gtk.ResponseType.CANCEL); });
@@ -230,7 +230,6 @@ public class EditThemeWindow : Dialog {
 		tv_widget = new TreeView();
 		tv_widget.get_selection().mode = SelectionMode.SINGLE;
 		tv_widget.headers_visible = false;
-		tv_widget.set_rules_hint (true);
 		
 		sw_widget = new ScrolledWindow(null, null);
 		sw_widget.set_shadow_type (ShadowType.ETCHED_IN);
