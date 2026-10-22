@@ -1,0 +1,51 @@
+-- Minimal · Weekday Clock
+-- Letter-spaced weekday over the time, with date and weather
+-- Part of the Minimal widget pack for Conky Manager 3. Run one at a time:
+-- they all sit at the top middle of the screen.
+-- Settings (12-hour clock, dark text, weather location/units) live at the top
+-- of lua/minimal.lua.
+
+local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
+
+-- lua_load splits paths on spaces, so load the script through a space-free link
+local lua_dir = dir .. '/lua'
+if lua_dir:find('%s') then
+	local link = (os.getenv('XDG_RUNTIME_DIR') or '/tmp') .. '/conky-minimal-lua'
+	os.execute(string.format("ln -sfn '%s' '%s'", (lua_dir:gsub("'", "'\\''")), link))
+	lua_dir = link
+end
+
+conky.config = {
+	lua_load = lua_dir .. '/minimal.lua',
+	-- the design size (560 x 240); the script scales the widget to fit the window,
+	-- so changing the size below zooms it
+	lua_draw_hook_pre = 'minimal_main weekday 560 240',
+
+	alignment = 'top_middle',
+	gap_x = 0,
+	gap_y = 48,
+	minimum_width = 560,
+	minimum_height = 240,
+
+	update_interval = 2,
+	double_buffer = true,
+	background = false,
+	use_xft = true,
+	draw_shades = false,
+	draw_outline = false,
+	draw_borders = false,
+	draw_graph_borders = false,
+	no_buffers = true,
+
+	own_window = true,
+	own_window_type = 'normal',
+	own_window_class = 'Conky',
+	own_window_title = 'Minimal Weekday Clock',
+	own_window_transparent = true,
+	own_window_argb_visual = true,
+	own_window_argb_value = 0,
+	own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+}
+
+conky.text = [[
+]]

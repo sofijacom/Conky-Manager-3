@@ -7,15 +7,13 @@ launcherdir = sharedir + '/applications'
 app_name = 'conky-manager3'
 
 sources = [
-        'src/AboutWindow.vala',
-        'src/GeneratePreviewWindow.vala',
         'src/Main.vala',
         'src/MainWindow.vala',
-        'src/SettingsWindow.vala',
-        'src/DonationWindow.vala',
         'src/EditThemeWindow.vala',
         'src/Utility.vala',
-        'src/EditWidgetWindow.vala'
+        'src/EditWidgetWindow.vala',
+        'src/Style.vala',
+        'src/Pages.vala'
 ]
 
 dependencies = [

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b14fd0"/>
+      <stop offset="0.5" stop-color="#5b4ae0"/>
+      <stop offset="1" stop-color="#1fa2ff"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="arc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7ef0ff"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="0.3" cy="0.05" r="0.75">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- tile -->
+  <rect x="16" y="16" width="224" height="224" rx="52" fill="url(#bg)"/>
+  <rect x="16" y="16" width="224" height="224" rx="52" fill="url(#sheen)"/>
+  <!-- glass widget panel -->
+  <rect x="50" y="58" width="156" height="140" rx="30" fill="url(#glass)"/>
+  <rect x="51.5" y="59.5" width="153" height="137" rx="28.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
+  <!-- ring gauge -->
+  <circle cx="102" cy="114" r="26" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="10"/>
+  <path d="M102 88 A26 26 0 1 1 78.6 125.3" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round"/>
+  <!-- bars -->
+  <rect x="142" y="94" width="44" height="10" rx="5" fill="#ffffff" fill-opacity="0.3"/>
+  <rect x="142" y="94" width="32" height="10" rx="5" fill="#ffffff"/>
+  <rect x="142" y="112" width="44" height="10" rx="5" fill="#ffffff" fill-opacity="0.3"/>
+  <rect x="142" y="112" width="20" height="10" rx="5" fill="#ffffff"/>
+  <rect x="142" y="130" width="44" height="10" rx="5" fill="#ffffff" fill-opacity="0.3"/>
+  <rect x="142" y="130" width="38" height="10" rx="5" fill="#ffffff"/>
+  <rect x="72" y="160" width="112" height="10" rx="5" fill="#ffffff" fill-opacity="0.55"/>
+</svg>

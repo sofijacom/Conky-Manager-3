@@ -59,6 +59,8 @@ public class EditWidgetWindow : Dialog {
 	private Button btn_discard_changes;
 	private Button btn_cancel_changes;
 	private ConkyRC conkyrc;
+	// control values as loaded; Apply only writes settings the user changed
+	private Gee.HashMap<string,string> loaded = new Gee.HashMap<string,string>();
 	
 	public EditWidgetWindow(ConkyRC conkyrc_edit) {
 		title = _("Edit Widget");
@@ -547,7 +549,25 @@ public class EditWidgetWindow : Dialog {
 			txt_network_device.text = net.strip();
 		}
 
+		loaded = control_values();
+
 		debug("-----------------------------------------------------");
+	}
+
+	private Gee.HashMap<string,string> control_values() {
+		var v = new Gee.HashMap<string,string>();
+		v["alignment"] = gtk_combobox_get_value(cmb_alignment,1,"top_left");
+		v["gap_x"] = spin_gap_x.value.to_string();
+		v["gap_y"] = spin_gap_y.value.to_string();
+		v["transparency"] = gtk_combobox_get_value(cmb_transparency_type,1,"semi");
+		v["opacity"] = spin_opacity.value.to_string();
+		v["colour"] = rgba_to_hex(cbtn_bg_color.rgba, false, false);
+		v["min_width"] = spin_min_width.value.to_string();
+		v["min_height"] = spin_min_height.value.to_string();
+		v["padding"] = spin_height_padding.value.to_string();
+		v["time"] = gtk_combobox_get_value(cmb_time_format,1,"");
+		v["network"] = txt_network_device.text;
+		return v;
 	}
 	
 	private void btn_apply_changes_clicked () {
@@ -572,35 +592,63 @@ public class EditWidgetWindow : Dialog {
 		debug("-----------------------------------------------------");
 		debug(_("Updating theme") + ": %s".printf(conf.name));
 
+		// write only what changed, so settings the dialog can't represent
+		// (e.g. "minimum_width = width" in a Lua config) are left alone
+		var now = control_values();
+		var changed = new Gee.HashSet<string>();
+		foreach (var key in now.keys) {
+			if (now[key] != loaded[key]) {
+				changed.add(key);
+			}
+		}
+
 		//location
-		conf.alignment = gtk_combobox_get_value(cmb_alignment,1,"top_left");
-		conf.gap_x = spin_gap_x.value.to_string();
-		conf.gap_y = spin_gap_y.value.to_string();
-		
+		if ("alignment" in changed){
+			conf.alignment = now["alignment"];
+		}
+		if ("gap_x" in changed){
+			conf.gap_x = now["gap_x"];
+		}
+		if ("gap_y" in changed){
+			conf.gap_y = now["gap_y"];
+		}
+
 		//transparency
-		conf.transparency = gtk_combobox_get_value(cmb_transparency_type,1,"semi");
-		conf.own_window_argb_value = "%.0f".printf((spin_opacity.value / 100.0) * 255.0);
-		conf.own_window_colour = rgba_to_hex(cbtn_bg_color.rgba, false, false); 
-		
-		//window size 
+		if (("transparency" in changed) || ("opacity" in changed)){
+			conf.transparency = now["transparency"];
+			conf.own_window_argb_value = "%.0f".printf((spin_opacity.value / 100.0) * 255.0);
+		}
+		if ("colour" in changed){
+			conf.own_window_colour = now["colour"];
+		}
+
+		//window size
 		if (conf.one_ten_config){
-			conf.minimum_width = spin_min_width.value.to_string();
-			conf.minimum_height = spin_min_height.value.to_string();
+			if ("min_width" in changed){
+				conf.minimum_width = now["min_width"];
+			}
+			if ("min_height" in changed){
+				conf.minimum_height = now["min_height"];
+			}
 		}
-		else{
-			conf.minimum_size = spin_min_width.value.to_string() + " " + spin_min_height.value.to_string();
+		else if (("min_width" in changed) || ("min_height" in changed)){
+			conf.minimum_size = now["min_width"] + " " + now["min_height"];
 		}
-		conf.height_padding = (int) spin_height_padding.value;
-		
+		if ("padding" in changed){
+			conf.height_padding = (int) spin_height_padding.value;
+		}
+
 		//time
-		if(conf.time_format != ""){
-			conf.time_format = gtk_combobox_get_value(cmb_time_format,1,"");
+		if (("time" in changed) && conf.time_format != ""){
+			conf.time_format = now["time"];
 		}
-		
+
 		//network
-		if(conf.network_device != ""){
-			conf.network_device = txt_network_device.text;
+		if (("network" in changed) && conf.network_device != ""){
+			conf.network_device = now["network"];
 		}
+
+		loaded = now;
 		
 		//save changes to file
 		conf.save_file();

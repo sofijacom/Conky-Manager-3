@@ -1,50 +1,26 @@
-# How to build this software. It was tested on Mint 18.x and 19 versions, but will probably build just the same on the various *ubuntu systems too.
+# How to build Conky Manager 3
 
-## additional required packages to build:
- build-essential
- git
- valac
- libgee-0.8-dev
- libgtk-3-dev
- libjson-glib-dev
- gettext
- libgettextpo-dev
+Install the build tools (Debian/Ubuntu package names):
 
-## additional required run time packages:
- p7zip-full (or 7zip)
- imagemagick
-
-## here is a one-shot installation command for all of the above packages:
-```
-apt install build-essential git valac libgee-0.8-dev libgtk-3-dev libjson-glib-dev gettext libgettextpo-dev p7zip-full imagemagick
+```bash
+sudo apt install build-essential git valac libgtk-3-dev libgee-0.8-dev libjson-glib-dev gettext conky-all p7zip-full imagemagick rsync
 ```
 
+Build and install:
 
-## clone this repository
-the following command will create a subdirectory from whatever directory you are currently in called conky-manager2 then download the files from github and put them in that subdirectory:
-```
-git clone https://github.com/zcot/conky-manager2.git
-```
-
-## change the directory to that source code location:
-```
-cd conky-manager2
+```bash
+git clone https://github.com/thuutien/Conky-Manager-3.git
+cd Conky-Manager-3
+make -C src
+sudo ./install.sh
 ```
 
-## compile the source:
-```
-make
-```
-( follow instructions here to build a `.deb` file instead: https://gist.github.com/zcot/ff43f40ceaf970623bfd18ead1bd65b2 )
-## install the finished program into the local file system:
-```
-sudo make install
-```
+Run `src/conky-manager3` to try it without installing. Uninstall with `sudo ./install.sh --uninstall`.
 
-## can be uninstalled as follows:
-```
-sudo make uninstall
-```
+Release files:
 
+- `packaging/build-deb.sh` builds `dist/conky-manager3_<version>_<arch>.deb`
+- `packaging/build-tarball.sh` builds `dist/conky-manager3-<version>-<arch>.tar.gz` with a prebuilt binary
+- `packaging/build-themepacks.sh` rebuilds the bundled widget packs from `themes/`
 
-
+`meson.build` is also kept up to date if you prefer Meson.

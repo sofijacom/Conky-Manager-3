@@ -37,10 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.0.1";
-public const string AppAuthor = "Tony George";
-public const string AppAuthorEmail = "teejeetech@gmail.com";
-public const string AppAuthorEmail2 = "zcotcaudle@gmail.com";
+public const string AppVersion = "3.1.0";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
@@ -64,16 +61,14 @@ public class Main : GLib.Object {
 	public bool capture_background = false;
 	public bool generate_png = true;
 	//public int selected_widget_index = 0;
-	public bool show_preview = true;
-	public bool show_list = true;
 	public bool show_active = false;
-	public int pane_position = 300;
 	public int window_width = 600;
 	public int window_height = 500;
 
 	//public string[] bg_scaling = {"center","fill","max","scale","tile"};
 	public string[] bg_scaling = {"none","centered","tiled","stretched","scaled","zoomed"};
-	public string[] bg_scaling_gnome = {"stretched","centered","tiled","stretched","scaled","zoomed"};
+	// GNOME, Cinnamon and MATE picture-options names ("wallpaper" = tiled, "zoom" = zoomed)
+	public string[] bg_scaling_gnome = {"stretched","centered","wallpaper","stretched","scaled","zoom"};
 	public string[] bg_scaling_xfce = {"0","1","2","3","4","5"};
 	public string[] bg_scaling_lxde = {"","center","tile","stretch","fit","crop"};
 
@@ -87,6 +82,7 @@ public class Main : GLib.Object {
 
 		//init GTK
 		Gtk.init (ref args);
+		Style.install();
 
 		//init TMP
 		init_tmp();
@@ -200,9 +196,6 @@ public class Main : GLib.Object {
 
 		config.set_string_member("capture_background", capture_background.to_string());
 		config.set_string_member("generate_png", generate_png.to_string());
-		config.set_string_member("show_preview", show_preview.to_string());
-		config.set_string_member("show_list", show_list.to_string());
-		config.set_string_member("pane_position", pane_position.to_string());
 		config.set_string_member("window_width", window_width.to_string());
 		config.set_string_member("window_height", window_height.to_string());
 		config.set_string_member("startup_delay", startup_delay.to_string());
@@ -246,9 +239,6 @@ public class Main : GLib.Object {
 
 		capture_background = json_get_bool(config,"capture_background",false);
 		generate_png = json_get_bool(config,"generate_png",true);
-		show_preview = json_get_bool(config,"show_preview",show_preview);
-		show_list = json_get_bool(config,"show_list",show_list);
-		pane_position = json_get_int(config,"pane_position",pane_position);
 		window_width = json_get_int(config,"window_width",window_width);
 		window_height = json_get_int(config,"window_height",window_height);
 		startup_delay = json_get_int(config,"startup_delay",startup_delay);
@@ -983,11 +973,9 @@ public class ConkyRC : ConkyConfigItem {
 		//Theme.install();
 
 		cmd = "cd \"" + dir + "\"\n";
-		cmd += "conky -c \"" + path + "\"\n";
+		cmd += "conky -c \"" + path + "\" >/dev/null 2>&1\n";
 
 		execute_command_script_async(cmd);
-
-		Thread.usleep((ulong)1000000);
 		log_debug(_("Started") + ": " + path);
 
 		//set the flag for immediate effect

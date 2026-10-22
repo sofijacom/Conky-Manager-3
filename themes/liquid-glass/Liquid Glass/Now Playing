@@ -1,0 +1,52 @@
+-- Liquid Glass · Now Playing
+-- Current track via playerctl (MPRIS)
+-- Part of the Liquid Glass widget pack for Conky Manager 3.
+-- Settings (12-hour clock, weather location/units, network interface) live at
+-- the top of lua/widgets.lua; colors and glass strength in lua/glass.lua.
+
+local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
+
+-- lua_load splits paths on spaces, so load the scripts through a space-free link
+local lua_dir = dir .. '/lua'
+if lua_dir:find('%s') then
+	local link = (os.getenv('XDG_RUNTIME_DIR') or '/tmp') .. '/conky-liquid-glass-lua'
+	os.execute(string.format("ln -sfn '%s' '%s'", (lua_dir:gsub("'", "'\\''")), link))
+	lua_dir = link
+end
+
+conky.config = {
+	lua_load = lua_dir .. '/widgets.lua',
+	-- the design size (360 x 144); the script scales the widget to fit the window,
+	-- so changing the size below zooms it
+	lua_draw_hook_pre = 'glass_main media 360 144',
+
+	alignment = 'top_right',
+	gap_x = 24,
+	gap_y = 714,
+	minimum_width = 360,
+	minimum_height = 144,
+
+	update_interval = 1,
+	double_buffer = true,
+	background = false,
+	use_xft = true,
+	draw_shades = false,
+	draw_outline = false,
+	draw_borders = false,
+	draw_graph_borders = false,
+	cpu_avg_samples = 2,
+	net_avg_samples = 2,
+	no_buffers = true,
+
+	own_window = true,
+	own_window_type = 'normal',
+	own_window_class = 'Conky',
+	own_window_title = 'Liquid Glass Now Playing',
+	own_window_transparent = true,
+	own_window_argb_visual = true,
+	own_window_argb_value = 0,
+	own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+}
+
+conky.text = [[
+]]

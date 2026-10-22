@@ -443,11 +443,14 @@ namespace TeeJee.ProcessManagement{
 	public int execute_command_sync (string cmd){
 		
 		/* Executes single command synchronously and returns exit code 
-		 * Pipes and multiple commands are not supported */
+		 * Pipes and multiple commands are not supported.
+		 * Output is captured and dropped so probes like "gsettings get"
+		 * don't print to the terminal. */
 
 		try {
 			int exitCode;
-			Process.spawn_command_line_sync(cmd, null, null, out exitCode);
+			string std_out, std_err;
+			Process.spawn_command_line_sync(cmd, out std_out, out std_err, out exitCode);
 	        return exitCode;
 		}
 		catch (Error e){
@@ -1017,6 +1020,12 @@ namespace TeeJee.GtkHelper{
 		}
 		
 		string fallback_icon_file_path = "/usr/share/%s/%s".printf(icon_directory, fallback_icon_file_name);
+		// running from a source checkout: use the icons next to the binary
+		string local_path = "%s/share/%s/%s".printf(get_app_dir(), icon_directory, fallback_icon_file_name);
+		if (FileUtils.test(local_path, FileTest.EXISTS)){
+			pix_icon = null;
+			fallback_icon_file_path = local_path;
+		}
 		
 		if (pix_icon == null){ 
 			try {
