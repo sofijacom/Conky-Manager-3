@@ -37,7 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.1.0";
+public const string AppVersion = "3.2.0";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
@@ -58,6 +58,7 @@ public class Main : GLib.Object {
 	public string last_cmd;
 
 	public int startup_delay = 20;
+	public bool check_updates = true;
 	public bool capture_background = false;
 	public bool generate_png = true;
 	//public int selected_widget_index = 0;
@@ -88,6 +89,7 @@ public class Main : GLib.Object {
 		init_tmp();
 
 		//init app
+		Updater.init();
 		App = new Main(args);
 
 		//show window
@@ -199,6 +201,7 @@ public class Main : GLib.Object {
 		config.set_string_member("window_width", window_width.to_string());
 		config.set_string_member("window_height", window_height.to_string());
 		config.set_string_member("startup_delay", startup_delay.to_string());
+		config.set_string_member("check_updates", check_updates.to_string());
 
 		Json.Array arr = new Json.Array();
 		foreach(string path in search_folders){
@@ -242,6 +245,7 @@ public class Main : GLib.Object {
 		window_width = json_get_int(config,"window_width",window_width);
 		window_height = json_get_int(config,"window_height",window_height);
 		startup_delay = json_get_int(config,"startup_delay",startup_delay);
+		check_updates = json_get_bool(config,"check_updates",check_updates);
 
 		// search folders -------------------
 

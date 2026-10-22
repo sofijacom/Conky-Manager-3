@@ -13,7 +13,8 @@ sources = [
         'src/Utility.vala',
         'src/EditWidgetWindow.vala',
         'src/Style.vala',
-        'src/Pages.vala'
+        'src/Pages.vala',
+        'src/Updater.vala'
 ]
 
 dependencies = [

@@ -87,6 +87,7 @@ Or run `sudo ./install.sh --uninstall` from the extracted tarball. Your widgets 
 - **A widget won't start or looks wrong?** Use **Run in Terminal** from its **⋯** menu to see Conky's error messages.
 - **No preview?** Use **Generate Preview** from its **⋯** menu, or **Generate Missing Previews** from the main menu. It needs ImageMagick and an X11 session.
 - **Keep widgets somewhere else?** Add the folder in **Settings → Widget folders**.
+- **Updates:** Conky Manager 3 checks for new releases when it starts and shows **Update available** in the sidebar. Use **Check for Updates…** in the menu any time; it downloads the right package, verifies its checksum and installs it after asking for your password. Turn off the startup check in the same menu.
 - **Shortcuts:** Ctrl+F searches, F5 rescans your widget folders.
 
 ## Build from source

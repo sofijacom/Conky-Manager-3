@@ -17,7 +17,7 @@ Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: $ARCH
-Depends: libc6 (>= 2.34), libgtk-3-0t64 | libgtk-3-0, libglib2.0-0t64 | libglib2.0-0, libgee-0.8-2, libjson-glib-1.0-0, conky-all | conky-std | conky, rsync, psmisc, p7zip-full | 7zip, imagemagick
+Depends: libc6 (>= 2.34), libgtk-3-0t64 | libgtk-3-0, libglib2.0-0t64 | libglib2.0-0, libgee-0.8-2, libjson-glib-1.0-0, conky-all | conky-std | conky, curl, rsync, psmisc, p7zip-full | 7zip, imagemagick
 Conflicts: conky-manager2
 Replaces: conky-manager2
 Maintainer: Conky Manager 3 <conky-manager3@localhost>

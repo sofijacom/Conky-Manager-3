@@ -81,6 +81,17 @@ list.nav row:selected {
   color: rgba(255, 255, 255, 0.45);
   padding: 14px 12px 4px 12px;
 }
+button.update-card {
+  background-color: rgba(255, 255, 255, 0.14);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 10px 12px;
+}
+button.update-card:hover { background-color: rgba(255, 255, 255, 0.22); }
+.update-card-title { font-weight: 800; font-size: 13px; }
+.update-card-detail { font-size: 11px; color: rgba(255, 255, 255, 0.72); }
 .stats {
   background-color: rgba(0, 0, 0, 0.18);
   border-radius: 12px;

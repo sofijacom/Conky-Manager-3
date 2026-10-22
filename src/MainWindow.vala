@@ -68,6 +68,9 @@ public class MainWindow : Window {
 	private Meter meter_running;
 	private Meter meter_cpu;
 	private Meter meter_memory;
+	private Button update_card;
+	private Label update_version;
+	private Updater.Release? latest_release = null;
 	private Gee.ArrayList<Page> pages = new Gee.ArrayList<Page>();
 	private string page_class = "";
 	private int64 last_action = 0;
@@ -130,6 +133,44 @@ public class MainWindow : Window {
 		});
 
 		rescan();
+
+		if (App.check_updates) {
+			Updater.fetch_latest.begin((obj, res) => {
+				try {
+					on_release_checked(Updater.fetch_latest.end(res));
+				}
+				catch (Error e) {
+					log_debug("Update check failed: " + e.message); // stays silent at startup
+				}
+			});
+		}
+	}
+
+	/* updates --------------------------------------------------------- */
+
+	public void on_release_checked(Updater.Release rel) {
+		latest_release = rel;
+		bool newer = Updater.is_newer(rel.version);
+		update_version.label = _("Version %s · Click to install").printf(rel.version);
+		update_card.visible = newer;
+	}
+
+	private void show_update_dialog(Updater.Release? rel) {
+		var dialog = new Updater.UpdateDialog(this, rel);
+		dialog.show();
+	}
+
+	/* starts a fresh copy (the new version after an update) and closes this one */
+	public void restart() {
+		string exe = FileUtils.test(Updater.INSTALLED_BINARY, FileTest.IS_EXECUTABLE) ? Updater.INSTALLED_BINARY : Updater.exe_path;
+		try {
+			Process.spawn_async(null, { exe }, null, SpawnFlags.SEARCH_PATH, null, null);
+		}
+		catch (SpawnError e) {
+			log_error(e.message);
+			return;
+		}
+		destroy();
 	}
 
 	/* header bar ------------------------------------------------------ */
@@ -142,6 +183,15 @@ public class MainWindow : Window {
 		set_titlebar(header);
 
 		var menu = new Gtk.Menu();
+		add_menu_item(menu, _("Check for Updates…"), () => show_update_dialog(null));
+		var auto_check = new Gtk.CheckMenuItem.with_label(_("Check for Updates at Startup"));
+		auto_check.active = App.check_updates;
+		auto_check.toggled.connect(() => {
+			App.check_updates = auto_check.active;
+			App.save_app_config();
+		});
+		menu.append(auto_check);
+		menu.append(new SeparatorMenuItem());
 		add_menu_item(menu, _("Generate Missing Previews"), () => generate_previews(missing_previews()));
 		add_menu_item(menu, _("Regenerate All Previews"), () => generate_previews(App.conkyrc_list));
 		menu.append(new SeparatorMenuItem());
@@ -217,6 +267,23 @@ public class MainWindow : Window {
 		stats.pack_start(meter_cpu, false, false, 0);
 		stats.pack_start(meter_memory, false, false, 0);
 		sidebar.pack_end(stats, false, false, 0);
+
+		// shown above the stats when a newer release is out
+		update_card = new Button();
+		update_card.relief = ReliefStyle.NONE;
+		Style.add_class(update_card, "update-card");
+		var card = new Box(Orientation.HORIZONTAL, 10);
+		card.pack_start(Style.icon("software-update-available-symbolic", 22), false, false, 0);
+		var card_texts = new Box(Orientation.VERTICAL, 0);
+		card_texts.pack_start(Style.label(_("Update available"), "update-card-title"), false, false, 0);
+		update_version = Style.label("", "update-card-detail");
+		card_texts.pack_start(update_version, false, false, 0);
+		card.pack_start(card_texts, true, true, 0);
+		card.show_all();
+		update_card.add(card);
+		update_card.no_show_all = true;
+		update_card.clicked.connect(() => show_update_dialog(latest_release));
+		sidebar.pack_end(update_card, false, false, 10);
 
 		return sidebar;
 	}

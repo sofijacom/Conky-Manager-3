@@ -60,17 +60,17 @@ apt_install_one_of() {
 install_deps() {
     if command -v apt-get >/dev/null; then
         apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y libgee-0.8-2 libjson-glib-1.0-0 rsync psmisc imagemagick
+        DEBIAN_FRONTEND=noninteractive apt-get install -y libgee-0.8-2 libjson-glib-1.0-0 curl rsync psmisc imagemagick
         # Debian 13 / Ubuntu 24.04 renamed these for the 64-bit time_t transition.
         apt_install_one_of libgtk-3-0t64 libgtk-3-0
         apt_install_one_of conky-all conky
         apt_install_one_of p7zip-full 7zip
     elif command -v dnf >/dev/null; then
-        dnf install -y gtk3 libgee json-glib conky rsync psmisc p7zip p7zip-plugins ImageMagick
+        dnf install -y gtk3 libgee json-glib conky curl rsync psmisc p7zip p7zip-plugins ImageMagick
     elif command -v pacman >/dev/null; then
-        pacman -Sy --needed --noconfirm gtk3 libgee json-glib conky rsync psmisc p7zip imagemagick
+        pacman -Sy --needed --noconfirm gtk3 libgee json-glib conky curl rsync psmisc p7zip imagemagick
     elif command -v zypper >/dev/null; then
-        zypper install -y libgtk-3-0 libgee-0_8-2 libjson-glib-1_0-0 conky rsync psmisc p7zip ImageMagick
+        zypper install -y libgtk-3-0 libgee-0_8-2 libjson-glib-1_0-0 conky curl rsync psmisc p7zip ImageMagick
     else
         echo "No supported package manager found; install dependencies manually" >&2
         echo "(GTK 3, libgee 0.8, json-glib, conky, rsync, psmisc, p7zip and ImageMagick)." >&2
