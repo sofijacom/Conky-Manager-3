@@ -8,8 +8,8 @@ This is a fork of [conky-manager2](https://github.com/zcot/conky-manager2) by Sc
 
 Download the files from the [latest release](https://github.com/thuutien/Conky-Manager-3/releases/latest):
 
-- Debian / Ubuntu / Linux Mint / Pop!_OS: `sudo apt install ./conky-manager3_3.0.0_amd64.deb`
-- Any distro: `tar xzf conky-manager3-3.0.0-x86_64.tar.gz && cd conky-manager3-3.0.0 && sudo ./install.sh`
+- Debian / Ubuntu / Linux Mint / Pop!_OS: `sudo apt install ./conky-manager3_3.0.1_amd64.deb`
+- Any distro: `tar xzf conky-manager3-3.0.1-x86_64.tar.gz && cd conky-manager3-3.0.1 && sudo ./install.sh`
 - One-liner: `curl -fsSL https://raw.githubusercontent.com/thuutien/Conky-Manager-3/main/packaging/quick-install.sh | sudo bash`
 
 Prebuilt binaries need x86_64 and glibc 2.34 or newer (Ubuntu 22.04, Mint 21, Debian 12 and later). Conky Manager 3 installs alongside your conky configs in `~/.conky` and replaces the `conky-manager2` package if you have it; your conky-manager2 settings are carried over on first run.

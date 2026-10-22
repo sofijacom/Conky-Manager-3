@@ -37,7 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.0.0";
+public const string AppVersion = "3.0.1";
 public const string AppAuthor = "Tony George";
 public const string AppAuthorEmail = "teejeetech@gmail.com";
 public const string AppAuthorEmail2 = "zcotcaudle@gmail.com";
@@ -172,6 +172,9 @@ public class Main : GLib.Object {
 		if (msg.length > 0){
 			msg = _("Commands listed below are not available") + ":\n\n" + msg + "\n";
 			msg += _("The features listed next to them will not work until the required packages are installed.");
+			if (Environment.find_program_in_path("apt-get") != null){
+				msg += "\n\n" + _("To install them, run") + ":\n  sudo apt install conky-all rsync psmisc p7zip-full imagemagick";
+			}
 			log_error(msg, false, true);
 			return false;
 		}
