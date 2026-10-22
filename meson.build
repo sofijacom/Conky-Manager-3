@@ -1,10 +1,10 @@
-project('conky-manager2', ['c','vala'])
+project('conky-manager3', ['c','vala'])
 
 prefix = '/usr'
 bindir = prefix + '/bin'
 sharedir = prefix + '/share'
 launcherdir = sharedir + '/applications'
-app_name = 'conky-manager2'
+app_name = 'conky-manager3'
 
 sources = [
         'src/AboutWindow.vala',
@@ -34,8 +34,8 @@ install_data('src/' + app_name + '.desktop', install_dir : launcherdir)
 install_data('src/share/pixmaps/' + app_name + '.png', install_dir : sharedir + '/pixmaps')
 install_data('src/' + app_name + '.appdata.xml', install_dir : sharedir + '/metainfo')
 install_data('man/' + app_name + '.1', install_dir : sharedir + '/man/man1')
-install_subdir('src/share/conky-manager2/images', install_dir : sharedir + '/' + app_name)
-install_subdir('src/share/conky-manager2/themepacks', install_dir : sharedir + '/' + app_name)
+install_subdir('src/share/conky-manager3/images', install_dir : sharedir + '/' + app_name)
+install_subdir('src/share/conky-manager3/themepacks', install_dir : sharedir + '/' + app_name)
 
 subdir('po')
 
@@ -48,4 +48,4 @@ subdir('po')
 #    )
 #endif
 
-executable('conky-manager2', sources, install : true, dependencies: dependencies)
+executable('conky-manager3', sources, install : true, dependencies: dependencies)

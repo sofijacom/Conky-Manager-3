@@ -1,34 +1,21 @@
+# Conky Manager 3
 
-Conky Manager
-=======================
+A GTK tool for managing [Conky](https://github.com/brndnmtthws/conky) widgets and themes: browse, start/stop, preview and edit them, with support for both classic and Lua-based (conky 1.10+) configs.
 
-Simple tool for managing Conky configs.
-...
+This is a fork of [conky-manager2](https://github.com/zcot/conky-manager2) by Scott Caudle, itself a fork of the original Conky Manager by teejee2008 (Tony George). See [version-history](./version-history) for what changed.
 
-# Conky Manager 2 - a newer conky config manager
+## Install
 
-This is a fork of the old original Conky Manager by teejee2008(Tony George).
+Download the files from the [latest release](https://github.com/thuutien/Conky-Manager-3/releases/latest):
 
-This latest version supports Ubuntu 16-22 versions as well as Mint 18-21.x and any other Ubuntu flavor or derivative.
+- Debian / Ubuntu / Linux Mint / Pop!_OS: `sudo apt install ./conky-manager3_3.0.0_amd64.deb`
+- Any distro: `tar xzf conky-manager3-3.0.0-x86_64.tar.gz && cd conky-manager3-3.0.0 && sudo ./install.sh`
+- One-liner: `curl -fsSL https://raw.githubusercontent.com/thuutien/Conky-Manager-3/main/packaging/quick-install.sh | sudo bash`
 
-It also provides support for the newer lua-based conky and configuration files(v1.10)
+Prebuilt binaries need x86_64 and glibc 2.34 or newer (Ubuntu 22.04, Mint 21, Debian 12 and later). Conky Manager 3 installs alongside your conky configs in `~/.conky` and replaces the `conky-manager2` package if you have it; your conky-manager2 settings are carried over on first run.
 
+Uninstall with `sudo apt remove conky-manager3`, or `sudo ./install.sh --uninstall` from the extracted tarball.
 
-## Installation
+## Build from source
 
-**For Ubuntu and derivatives:**
-
-```bash
-sudo add-apt-repository ppa:teejee2008/foss
-sudo apt update
-sudo apt install conky-manager2
-```
-
-**Other Distributions**
-
-Right now, the alternate installation method is to download and compile this source package, but it's only a few simple commands. It will provide `make install` as well as building a `.deb`.
-
-Please see document [HOWTOBUILD.md](./HOWTOBUILD.md)
-
-(macOS note: To build this newer version for macOS you can use the git software if it is installed. Please see the 2 instructions in the following HOWTOBUILD.md document on how to [clone this repository](./HOWTOBUILD.md#clone-this-repository) -Alternately, you can use the magic green button to download the zip file, and then you extract it. Be sure to open Terminal into the source file directory. Then to do the actual software build and installation, follow the instructions provided here: [https://github.com/npyl/conky-manager](https://github.com/npyl/conky-manager#conky-manager) )
-
+See [HOWTOBUILD.md](./HOWTOBUILD.md), then run `sudo ./install.sh` from the source tree. Release files are built with `packaging/build-deb.sh` and `packaging/build-tarball.sh`.

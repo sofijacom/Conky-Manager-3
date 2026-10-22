@@ -1076,7 +1076,7 @@ public class MainWindow : Window {
 		dialog.license = "This program is free for personal and commercial use and comes with absolutely no warranty. You use this program entirely at your own risk. The author will not be liable for any damages arising from the use of this program.";
 		dialog.website = "http://teejeetech.in";
 		dialog.website_label = "http://teejeetech.blogspot.in";
-		dialog.website2 = "https://github.com/zcot/conky-manager2";
+		dialog.website2 = "https://github.com/thuutien/Conky-Manager-3";
 		dialog.website_label2 = "project on github";
 
 		dialog.initialize();

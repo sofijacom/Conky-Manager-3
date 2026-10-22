@@ -35,14 +35,14 @@ using TeeJee.System;
 using TeeJee.Misc;
 
 public Main App;
-public const string AppName = "Conky Manager";
-public const string AppShortName = "conky-manager2";
-public const string AppVersion = "2.74";
+public const string AppName = "Conky Manager 3";
+public const string AppShortName = "conky-manager3";
+public const string AppVersion = "3.0.0";
 public const string AppAuthor = "Tony George";
 public const string AppAuthorEmail = "teejeetech@gmail.com";
 public const string AppAuthorEmail2 = "zcotcaudle@gmail.com";
 
-const string GETTEXT_PACKAGE = "conky-manager2";
+const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
 
 public class Main : GLib.Object {
@@ -119,7 +119,13 @@ public class Main : GLib.Object {
 		app_path = (File.new_for_path (args[0])).get_parent().get_path ();
 		share_folder = "/usr/share";
 		data_dir = home + "/.conky";
-		app_conf_path = home + "/.config/conky-manager2.json";
+		app_conf_path = home + "/.config/conky-manager3.json";
+
+		//carry over settings from conky-manager2 on first run
+		string old_conf_path = home + "/.config/conky-manager2.json";
+		if (!file_exists(app_conf_path) && file_exists(old_conf_path)){
+			file_copy(old_conf_path, app_conf_path);
+		}
 		search_folders = new Gee.ArrayList<string>();
 
 		conkyrc_list = new Gee.ArrayList<ConkyRC>();
@@ -293,7 +299,7 @@ public class Main : GLib.Object {
 	}
 
 	public void init_theme_packs(){
-		string sharePath = "/usr/share/conky-manager2/themepacks";
+		string sharePath = "/usr/share/conky-manager3/themepacks";
 		string config_file = data_dir + "/.themepacks";
 
 		//create empty config file if missing

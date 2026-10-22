@@ -6,13 +6,14 @@ launcherdir=$(sharedir)/applications
 mandir=$(sharedir)/man
 man1dir=$(mandir)/man1
 CFLAGS=--std=c99
-app_name=conky-manager2
-app_fullname="Conky Manager"
+app_name=conky-manager3
+app_fullname="Conky Manager 3"
 
 all:
 	#build binaries
 	valac -X -D'GETTEXT_PACKAGE="${app_name}"' --Xcc="-lm" -X -Wl,-rpath,/usr/share/${app_name}/libs "Main.vala" "MainWindow.vala" "EditWidgetWindow.vala" "EditThemeWindow.vala" "SettingsWindow.vala" "DonationWindow.vala" "GeneratePreviewWindow.vala" "AboutWindow.vala" "Utility.vala" -o ${app_name} --pkg glib-2.0 --pkg gio-unix-2.0 --pkg posix --pkg gtk+-3.0 --pkg gee-0.8 --pkg json-glib-1.0 
-	
+
+pot:
 	#update translation template
 	xgettext --language=C --keyword=_ --copyright-holder='Tony George (teejee2008@gmail.com)' --package-name='${app_name}' --package-version='2.0' --msgid-bugs-address='teejee2008@gmail.com' --escape --sort-output -o ../${app_name}.pot *.vala
 
@@ -37,7 +38,7 @@ install:
 	
 	#manual
 	install -m 0755 ../man/${app_name}.1 "$(DESTDIR)$(man1dir)"
-	gzip "$(DESTDIR)$(man1dir)/${app_name}.1"
+	gzip -f "$(DESTDIR)$(man1dir)/${app_name}.1"
 	
 	#app icon
 	install -m 0755 share/pixmaps/${app_name}.png "$(DESTDIR)$(sharedir)/pixmaps"
@@ -83,7 +84,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(launcherdir)/${app_name}.desktop"
 	
 	#manual
-	rm -f "$(DESTDIR)$(man1dir)/${app_name}.1"
+	rm -f "$(DESTDIR)$(man1dir)/${app_name}.1.gz"
 	
 	#app icon
 	rm -f "$(DESTDIR)$(sharedir)/pixmaps/${app_name}.png"

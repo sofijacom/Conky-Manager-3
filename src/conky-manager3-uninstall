@@ -1,7 +1,7 @@
 #!/bin/bash
 
-app_name='conky-manager2'
-app_fullname='Conky Manager'
+app_name='conky-manager3'
+app_fullname='Conky Manager 3'
 
 Reset='\e[0m'
 Red='\e[1;31m'

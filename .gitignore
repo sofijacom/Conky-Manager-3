@@ -1,7 +1,8 @@
-src/conky-manager2
+src/conky-manager3
 installer/amd64
 installer/i386
 installer/*.deb
 installer/*.run
 designs/
 .bzr/
+dist/

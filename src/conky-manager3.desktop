@@ -1,12 +1,12 @@
 [Desktop Entry]
-Name=Conky Manager
-Exec=conky-manager2
+Name=Conky Manager 3
+Exec=conky-manager3
 Type=Application
 GenericName=Conky Theme Manager
 Terminal=false
-Icon=conky-manager2
+Icon=conky-manager3
 Comment=Conky Theme Manager
 X-KDE-StartupNotify=false
 Categories=Utility
 InitialPreference=9
-Name[en_US]=Conky Manager
+Name[en_US]=Conky Manager 3
