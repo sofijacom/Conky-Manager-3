@@ -18,6 +18,21 @@ The same seven widgets as [Liquid Glass](../liquid-glass), in the minimal style.
 | Processes | Top 5 processes by CPU, with memory use | Left |
 | Storage | Free space on each disk, disk read/write | Left |
 
+## System Monitor
+
+One tall widget that tracks the whole machine, in place of the right-hand column:
+
+![System Monitor](Minimal/System%20Monitor.png)
+
+- **CPU**: usage with a history graph, a bar per core, model, clock speed and temperature
+- **Graphics**: every GPU. NVIDIA (with the NVIDIA driver) and AMD show load, video memory and temperature; Intel shows its current clock against its maximum, since load needs root. A dedicated GPU that is powered down shows as *sleeping* and is not woken up to read it.
+- **Memory** and swap
+- **Temperatures** from CPU, chipset, NVMe, Wi-Fi and GPU sensors, plus fan speeds
+- **Disks**: free space per disk and read/write activity
+- **Network** speeds, battery and uptime
+
+Anything your hardware doesn't have is left out. Readings turn orange when they get high (90% load, 85°C).
+
 ## Clocks for the top middle
 
 ![Minimal clocks](preview.jpg)

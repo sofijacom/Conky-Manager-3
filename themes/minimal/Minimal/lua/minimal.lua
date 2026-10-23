@@ -9,6 +9,7 @@
   Clocks for the top middle: hero, calendar, weekday, bar
   Desktop set (same data as Liquid Glass): week, weather, system, network,
   storage, processes, media
+  System monitor: monitor (CPU, GPU, memory, temperatures, fans, disks, network)
 ]]
 
 ---------------------------------------------------------------- settings
@@ -123,6 +124,7 @@ local REGIONS = {
 local WIDGET_REGION = {
 	week = 'right', weather = 'right', system = 'right', media = 'right',
 	network = 'left', processes = 'left', storage = 'left',
+	monitor = 'right',
 }
 
 local auto = {checked = -1e9, path = nil, dark = false}
@@ -254,22 +256,42 @@ local function text(cr, str, x, y, opts)
 	str = tostring(str or '')
 	local size = opts.size or 14
 	local w = measure(cr, str, size, opts.weight, opts.tracking)
+	if opts.max_width and w > opts.max_width then
+		-- drop whole characters until it fits, then add an ellipsis
+		local list = chars(str)
+		while #list > 1 and w > opts.max_width do
+			table.remove(list)
+			str = table.concat(list) .. '…'
+			w = measure(cr, str, size, opts.weight, opts.tracking)
+		end
+	end
 	local outline = set_font(cr, size, opts.weight)
 	if opts.align == 'center' then x = x - w / 2 elseif opts.align == 'right' then x = x - w end
 
 	if SETTINGS.shadow then
-		-- soft shadow: faint copies on two rings around a slightly lowered centre
+		-- soft shadow: the glyph outlines, slightly lowered, stroked wide and faint
+		-- (a few calls per text instead of many offset copies)
 		local r, g, b = shadow_rgb()
 		local radius = math.min(math.max(1, size / 40), 3)
-		local cy = y + radius * 0.8
-		for ring = 1, 2 do
-			local rr = radius * ring
-			cairo_set_source_rgba(cr, r, g, b, ring == 1 and 0.05 or 0.025)
-			for i = 0, 7 do
-				local a = i * math.pi / 4
-				show(cr, str, x + math.cos(a) * rr, cy + math.sin(a) * rr, opts.tracking, outline)
-			end
+		cairo_save(cr)
+		cairo_new_path(cr)
+		local px = x
+		local pieces = (opts.tracking and opts.tracking ~= 0) and chars(str) or {str}
+		for _, piece in ipairs(pieces) do
+			cairo_move_to(cr, px, y + radius * 0.8)
+			cairo_text_path(cr, piece)
+			px = px + advance(cr, piece) + (opts.tracking or 0)
 		end
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND)
+		cairo_set_source_rgba(cr, r, g, b, 0.05)
+		cairo_set_line_width(cr, radius * 4 + outline)
+		cairo_stroke_preserve(cr)
+		cairo_set_source_rgba(cr, r, g, b, 0.07)
+		cairo_set_line_width(cr, radius * 2 + outline)
+		cairo_stroke_preserve(cr)
+		cairo_set_source_rgba(cr, r, g, b, 0.12)
+		cairo_fill(cr)
+		cairo_restore(cr)
 	end
 	local c = opts.color or ink(opts.alpha or 1)
 	cairo_set_source_rgba(cr, c[1], c[2], c[3], (c[4] or 1) * (opts.color and (opts.alpha or 1) or 1))
@@ -1068,6 +1090,350 @@ function W.media(cr, w, h)
 	text(cr, fmt_time(p), x, 130, {size = 11, weight = 'light', alpha = 0.55})
 	text(cr, status == 'Paused' and 'paused' or ('-' .. fmt_time(math.max(l - p, 0))), x + iw, 130,
 		{size = 11, weight = 'light', align = 'right', alpha = 0.55})
+end
+
+
+---------------------------------------------------------------- system monitor: sensors
+
+local function file_num(path)
+	return tonumber(trim(read_file(path) or ''))
+end
+
+local function list_dir(path)
+	local out = {}
+	for name in sh('ls -1 "' .. path .. '"'):gmatch('[^\n]+') do out[#out + 1] = name end
+	return out
+end
+
+-- CPU model, shortened: "i7-9750H", "Ryzen 7 5800X"
+local cpu_model = (function()
+	local name = (read_file('/proc/cpuinfo') or ''):match('model name%s*:%s*([^\n]+)') or 'CPU'
+	name = name:gsub('%(R%)', ''):gsub('%(TM%)', ''):gsub('%s+CPU%s+@.*$', ''):gsub('%s+@.*$', '')
+	name = name:gsub('^Intel%s+Core%s+', ''):gsub('^AMD%s+', ''):gsub('%s+%d+%-Core Processor', '')
+	name = name:gsub('%s+Processor$', ''):gsub('%s+with.*$', ''):gsub('%s+', ' ')
+	return trim(name)
+end)()
+
+local cpu_count = tonumber(trim(sh('nproc'))) or 1
+
+-- temperature and fan sensors, discovered once; only cheap sysfs reads afterwards
+local sensors = nil
+
+local function discover_sensors()
+	local temps, fans = {}, {}
+	local names = {
+		coretemp = 'CPU', k10temp = 'CPU', zenpower = 'CPU', cpu_thermal = 'CPU',
+		nvme = 'NVMe', pch_cannonlake = 'PCH', pch_skylake = 'PCH', pch_cometlake = 'PCH',
+		amdgpu = 'GPU', iwlwifi_1 = 'Wi-Fi', acpitz = 'Board',
+	}
+	local have_cpu = false
+	for _, h in ipairs(list_dir('/sys/class/hwmon')) do
+		local base = '/sys/class/hwmon/' .. h .. '/'
+		local chip = trim(read_file(base .. 'name') or '')
+		local nice = names[chip] or (chip:find('^pch') and 'PCH')
+		-- the first input is the package/composite reading for these chips
+		if nice and nice ~= 'GPU' and file_num(base .. 'temp1_input') then
+			if not (nice == 'Board' and have_cpu) then
+				temps[#temps + 1] = {name = nice, path = base .. 'temp1_input'}
+				if nice == 'CPU' then have_cpu = true end
+			end
+		end
+		for i = 1, 8 do
+			local f = base .. 'fan' .. i .. '_input'
+			if file_num(f) then
+				local lbl = trim(read_file(base .. 'fan' .. i .. '_label') or '')
+				fans[#fans + 1] = {name = lbl ~= '' and lbl or ('Fan ' .. (#fans + 1)), path = f}
+			end
+		end
+	end
+	-- the board sensor only adds noise next to a real CPU reading
+	local keep = {}
+	for _, t in ipairs(temps) do
+		if not (t.name == 'Board' and have_cpu) then keep[#keep + 1] = t end
+	end
+	table.sort(keep, function(a, b)
+		local order = {CPU = 1, GPU = 2, PCH = 3, NVMe = 4, ['Wi-Fi'] = 5, Board = 6}
+		return (order[a.name] or 9) < (order[b.name] or 9)
+	end)
+	return {temps = keep, fans = fans}
+end
+
+-- GPUs from /sys/class/drm: vendor, driver, name, and where to read load
+local gpus = nil
+local nvsmi = {time = -1e9, rows = {}}
+
+local function short_gpu_name(full, vendor)
+	local bracket = full:match('%[([^%]]+)%]')
+	local name = bracket or full
+	name = name:gsub('%s*/%s*Max%-Q', ''):gsub('%s+Mobile', '')
+	if vendor == 'intel' then name = name:gsub('^Intel%s+', '') end
+	return trim(name)
+end
+
+-- name from the PCI ID database; unlike lspci this never wakes a sleeping GPU
+local function pci_name(vendor_id, device_id)
+	local v, d = vendor_id:gsub('^0x', ''):lower(), device_id:gsub('^0x', ''):lower()
+	for _, db in ipairs({'/usr/share/hwdata/pci.ids', '/usr/share/misc/pci.ids', '/usr/share/pci.ids'}) do
+		local f = io.open(db, 'r')
+		if f then
+			f:close()
+			local name = trim(sh(string.format(
+				"awk -v v='%s' -v d='%s' '/^[0-9a-f]/{inv=($1==v)} inv && $0 ~ \"^\\t\"d\"  \"{sub(/^\\t[0-9a-f]+  /,\"\"); print; exit}' '%s'",
+				v, d, db)))
+			if name ~= '' then return name end
+		end
+	end
+	return ''
+end
+
+local function discover_gpus()
+	local list = {}
+	for _, card in ipairs(list_dir('/sys/class/drm')) do
+		if card:match('^card%d+$') then
+			local dev = '/sys/class/drm/' .. card .. '/device/'
+			local vendor_id = trim(read_file(dev .. 'vendor') or '')
+			local vendor = ({['0x10de'] = 'nvidia', ['0x1002'] = 'amd', ['0x8086'] = 'intel'})[vendor_id]
+			if vendor then
+				local driver = trim(sh('basename "$(readlink -f ' .. dev .. 'driver)"'))
+				local full = pci_name(vendor_id, trim(read_file(dev .. 'device') or ''))
+				list[#list + 1] = {
+					card = '/sys/class/drm/' .. card .. '/', dev = dev, vendor = vendor, driver = driver,
+					name = short_gpu_name(full ~= '' and full or vendor:upper(), vendor),
+				}
+			end
+		end
+	end
+	-- integrated first, like most system monitors
+	table.sort(list, function(a, b) return (a.vendor == 'intel' and 1 or 2) < (b.vendor == 'intel' and 1 or 2) end)
+	return list
+end
+
+-- returns {state = 'active'|'sleeping', load, load_label, mem_used, mem_total, temp}
+local function gpu_reading(g)
+	local r = {state = 'active'}
+	local power = trim(read_file(g.dev .. 'power/runtime_status') or 'active')
+	if power == 'suspended' then
+		r.state = 'sleeping' -- reading its sensors would wake it up
+		return r
+	end
+	if g.vendor == 'nvidia' and g.driver == 'nvidia' and sh('command -v nvidia-smi') ~= '' then
+		if os.time() - nvsmi.time >= 3 then
+			nvsmi.time = os.time()
+			nvsmi.rows = {}
+			local out = sh('nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits')
+			for line in out:gmatch('[^\n]+') do
+				local u, mu, mt, t = line:match('(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)')
+				nvsmi.rows[#nvsmi.rows + 1] = {tonumber(u), tonumber(mu), tonumber(mt), tonumber(t)}
+			end
+		end
+		local row = nvsmi.rows[1]
+		if row then
+			r.load, r.mem_used, r.mem_total, r.temp = row[1] / 100, row[2] * 1048576, row[3] * 1048576, row[4]
+			r.load_label = row[1] .. '%'
+		end
+	elseif g.vendor == 'amd' then
+		local busy = file_num(g.dev .. 'gpu_busy_percent')
+		if busy then r.load, r.load_label = busy / 100, busy .. '%' end
+		r.mem_used = file_num(g.dev .. 'mem_info_vram_used')
+		r.mem_total = file_num(g.dev .. 'mem_info_vram_total')
+	elseif g.vendor == 'intel' then
+		-- no load counter without root: show the clock against its maximum
+		local cur = file_num(g.card .. 'gt_act_freq_mhz') or file_num(g.card .. 'gt_cur_freq_mhz')
+		local max = file_num(g.card .. 'gt_RP0_freq_mhz') or file_num(g.card .. 'gt_max_freq_mhz')
+		if cur and max and max > 0 then r.load, r.load_label = cur / max, cur .. ' MHz' end
+	end
+	if not r.temp and g.vendor ~= 'intel' then
+		for _, h in ipairs(list_dir(g.dev .. 'hwmon')) do
+			local t = file_num(g.dev .. 'hwmon/' .. h .. '/temp1_input')
+			if t then r.temp = t / 1000 break end
+		end
+	end
+	return r
+end
+
+local function fmt_bytes(b)
+	if not b then return '' end
+	if b >= 1073741824 then return string.format('%.1f GiB', b / 1073741824) end
+	return string.format('%.0f MiB', b / 1048576)
+end
+
+---------------------------------------------------------------- system monitor: widget
+
+local mon = {cpu = {}, mem = {}}
+
+local function temp_color(t)
+	if t and t >= 85 then return HOT end
+	return nil
+end
+
+function W.monitor(cr, w, h)
+	local x, iw = PAD, w - 2 * PAD
+	if not sensors then sensors = discover_sensors() end
+	if not gpus then gpus = discover_gpus() end
+
+	local y = 24
+	label(cr, 'System monitor', x, y, iw, DEMO and 'workstation' or hostname)
+	y = y + 18
+
+	-- CPU -------------------------------------------------------------
+	local cpu = num('${cpu cpu0}')
+	push(mon.cpu, cpu)
+	local freq = num('${freq_g}')
+	local temp = cpu_temp()
+	y = y + 40
+	local vw = text(cr, string.format('%d%%', cpu), x - 2, y, {size = 44, weight = 'thin'})
+	text(cr, 'CPU', x + vw + 10, y - 22, {size = 11, weight = 'bold', tracking = 2, alpha = 0.6})
+	text(cr, cpu_model, x + vw + 10, y - 3, {size = 13, weight = 'light', alpha = 0.85})
+	local cpu_right = string.format('%.2f GHz', freq)
+	if temp then cpu_right = cpu_right .. '   ' .. math.floor(temp + 0.5) .. '°' end
+	text(cr, cpu_right, x + iw, y - 3, {size = 15, weight = 'light', align = 'right',
+		color = temp_color(temp), alpha = 0.95})
+	y = y + 10
+	sparkline(cr, x, y, iw, 34, mon.cpu, 100, 0.9, true)
+	y = y + 44
+	-- per-core bars
+	local n = math.min(cpu_count, 32)
+	local gap = n > 16 and 2 or 4
+	local cw = (iw - gap * (n - 1)) / n
+	for i = 1, n do
+		local v = num('${cpu cpu' .. i .. '}') / 100
+		local bx = x + (i - 1) * (cw + gap)
+		cairo_rectangle(cr, bx, y, cw, 22)
+		local c = ink(0.12)
+		cairo_set_source_rgba(cr, c[1], c[2], c[3], c[4])
+		cairo_fill(cr)
+		local hgt = math.max(1.5, 22 * v)
+		cairo_rectangle(cr, bx, y + 22 - hgt, cw, hgt)
+		c = (v >= 0.9) and HOT or ink(0.85)
+		cairo_set_source_rgba(cr, c[1], c[2], c[3], c[4] or 1)
+		cairo_fill(cr)
+	end
+	y = y + 22 + 16
+	text(cr, string.format('%d threads   ·   load %s', cpu_count, trim(parse('${loadavg}'))), x, y,
+		{size = 12, weight = 'light', alpha = 0.6})
+
+	-- GPU -------------------------------------------------------------
+	if #gpus > 0 then
+		y = y + 16
+		hairline(cr, x, y, x + iw, y, 0.2)
+		y = y + 26
+		label(cr, 'Graphics', x, y, iw)
+		for _, g in ipairs(gpus) do
+			local r = DEMO and (g.vendor == 'intel' and {state = 'active', load = 0.35, load_label = '400 MHz'}
+				or {state = 'active', load = 0.42, load_label = '42%', mem_used = 1.6 * 1073741824, mem_total = 4 * 1073741824, temp = 61})
+				or gpu_reading(g)
+			g.last = r -- reused for the temperature row below
+			y = y + 26
+			text(cr, g.name, x, y, {size = 15, weight = 'light', max_width = iw * 0.6})
+			if r.state == 'sleeping' then
+				text(cr, 'sleeping', x + iw, y, {size = 13, weight = 'light', align = 'right', alpha = 0.5})
+				y = y + 4
+			else
+				local right = r.load_label or ''
+				if r.temp then right = right .. (right ~= '' and '   ' or '') .. math.floor(r.temp + 0.5) .. '°' end
+				if right == '' then right = 'active' end
+				text(cr, right, x + iw, y, {size = 14, align = 'right', color = temp_color(r.temp), alpha = 0.95})
+				y = y + 12
+				bar(cr, x, y, iw, r.load or 0, 3, (r.load or 0) >= 0.9 and HOT or nil)
+				if r.mem_total and r.mem_total > 0 then
+					y = y + 18
+					text(cr, 'VRAM ' .. fmt_bytes(r.mem_used) .. ' of ' .. fmt_bytes(r.mem_total), x, y,
+						{size = 12, weight = 'light', alpha = 0.6})
+				end
+			end
+		end
+	end
+
+	-- Memory ----------------------------------------------------------
+	y = y + 22
+	hairline(cr, x, y, x + iw, y, 0.2)
+	y = y + 26
+	local memp = num('${memperc}')
+	push(mon.mem, memp)
+	label(cr, 'Memory', x, y, iw, trim(parse('${mem}')) .. ' of ' .. trim(parse('${memmax}')))
+	y = y + 14
+	bar(cr, x, y, iw, memp / 100, 3, memp >= 90 and HOT or nil)
+	local swapmax = trim(parse('${swapmax}'))
+	if swapmax ~= '' and not swapmax:match('^0') then
+		y = y + 20
+		text(cr, 'Swap', x, y, {size = 12, weight = 'light', alpha = 0.6})
+		text(cr, trim(parse('${swap}')) .. ' of ' .. swapmax, x + iw, y, {size = 12, weight = 'light', align = 'right', alpha = 0.6})
+	end
+
+	-- Temperatures and fans --------------------------------------------
+	local temps = {}
+	for _, t in ipairs(sensors.temps) do
+		local v = DEMO and ({CPU = 52, PCH = 49, NVMe = 41, ['Wi-Fi'] = 44})[t.name] or file_num(t.path)
+		if v then temps[#temps + 1] = {t.name, DEMO and v or v / 1000} end
+	end
+	for _, g in ipairs(gpus) do
+		if g.last and g.last.temp then temps[#temps + 1] = {'GPU', g.last.temp} end
+	end
+	if #temps > 0 then
+		y = y + 22
+		hairline(cr, x, y, x + iw, y, 0.2)
+		y = y + 26
+		label(cr, 'Temperatures', x, y, iw)
+		y = y + 30
+		local cols = math.min(#temps, 5)
+		local cw2 = iw / cols
+		for i, t in ipairs(temps) do
+			local col = (i - 1) % cols
+			if i > 1 and col == 0 then y = y + 46 end
+			local tx = x + col * cw2
+			text(cr, math.floor(t[2] + 0.5) .. '°', tx, y, {size = 24, weight = 'thin', color = temp_color(t[2])})
+			text(cr, t[1]:upper(), tx, y + 18, {size = 10, weight = 'bold', tracking = 2, alpha = 0.55})
+		end
+		y = y + 18
+	end
+	if #sensors.fans > 0 then
+		local parts = {}
+		for _, f in ipairs(sensors.fans) do
+			local rpm = DEMO and 2400 or file_num(f.path)
+			if rpm then parts[#parts + 1] = string.format('%s %d rpm', f.name:lower(), rpm) end
+		end
+		if #parts > 0 then
+			y = y + 22
+			text(cr, table.concat(parts, '   ·   '), x, y, {size = 12, weight = 'light', alpha = 0.6})
+		end
+	end
+
+	-- Disks -----------------------------------------------------------
+	y = y + 22
+	hairline(cr, x, y, x + iw, y, 0.2)
+	y = y + 26
+	label(cr, 'Disks', x, y, iw, 'read ' .. trim(parse('${diskio_read}')) .. '  ·  write ' .. trim(parse('${diskio_write}')))
+	for _, mp in ipairs(list_mounts()) do
+		local perc = num('${fs_used_perc ' .. mp .. '}')
+		local free = trim(parse('${fs_free ' .. mp .. '}'))
+		local size = trim(parse('${fs_size ' .. mp .. '}'))
+		if DEMO then
+			perc, free, size = table.unpack(mp == '/' and {38, '61.2GiB', '98.3GiB'} or {87, '112GiB', '869GiB'})
+		end
+		y = y + 26
+		text(cr, mount_label(mp), x, y, {size = 14, weight = 'light'})
+		text(cr, free .. ' free of ' .. size, x + iw, y, {size = 12, weight = 'light', align = 'right', alpha = 0.65})
+		y = y + 10
+		bar(cr, x, y, iw, perc / 100, 3, perc >= 85 and HOT or nil)
+	end
+
+	-- Network and battery -----------------------------------------------
+	local iface = SETTINGS.network_interface
+	if iface == '' then iface = trim(parse('${gw_iface}')) end
+	local footer = {}
+	if iface ~= '' and iface ~= 'multiple' and iface ~= '(null)' then
+		footer[#footer + 1] = string.format('net down %s  up %s', fmt_rate(num('${downspeedf ' .. iface .. '}')),
+			fmt_rate(num('${upspeedf ' .. iface .. '}')))
+	end
+	local cap, status = battery()
+	if cap then
+		footer[#footer + 1] = 'battery ' .. cap .. '%' .. ((status == 'Charging' and ' charging') or '')
+	end
+	footer[#footer + 1] = 'up ' .. trim(parse('${uptime_short}'))
+	y = y + 22
+	hairline(cr, x, y, x + iw, y, 0.2)
+	y = y + 24
+	text(cr, table.concat(footer, '   ·   '), x, y, {size = 12, weight = 'light', alpha = 0.6, max_width = iw})
 end
 
 ---------------------------------------------------------------- entry point
