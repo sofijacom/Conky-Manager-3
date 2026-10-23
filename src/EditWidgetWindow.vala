@@ -55,10 +55,14 @@ public class EditWidgetWindow : Dialog {
 	private Entry txt_network_device;
 	private Button btn_wifi;
 	private Button btn_lan;
-	private Button btn_apply_changes;
 	private Button btn_discard_changes;
 	private Button btn_cancel_changes;
 	private ConkyRC conkyrc;
+	// the config as it was when the dialog opened, for Reset
+	private string original_text = "";
+	private bool was_running = false;
+	private bool loading = false;
+	private uint apply_timer = 0;
 	// control values as loaded; Apply only writes settings the user changed
 	private Gee.HashMap<string,string> loaded = new Gee.HashMap<string,string>();
 	
@@ -443,35 +447,35 @@ public class EditWidgetWindow : Dialog {
 		
 		Box hbox_action = (Box) get_action_area();
 		
-		//btn_apply_changes
-		btn_apply_changes = new Button.with_label("  " + _("Apply"));
-		btn_apply_changes.set_image (new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
-        btn_apply_changes.clicked.connect (btn_apply_changes_clicked);
-        btn_apply_changes.set_tooltip_text (_("Apply Changes"));
-        //btn_apply_changes.set_size_request(-1,30);
-		hbox_action.add(btn_apply_changes);
-		
-		//btn_discard_changes
+		// changes apply as you make them; Reset puts back how the widget was
+		// when this window opened
 		btn_discard_changes = new Button.with_label("  " + _("Reset"));
-		btn_discard_changes.set_image (new Image.from_icon_name ("edit-clear", IconSize.MENU));
+		btn_discard_changes.set_image (new Image.from_icon_name ("edit-undo-symbolic", IconSize.MENU));
         btn_discard_changes.clicked.connect (btn_discard_changes_clicked);
-        btn_discard_changes.set_tooltip_text (_("Reset Changes"));
-        //btn_discard_changes.set_size_request(-1,30);
+        btn_discard_changes.set_tooltip_text (_("Undo every change made since this window opened"));
+        btn_discard_changes.sensitive = false;
 		hbox_action.add(btn_discard_changes);
 
-		//btn_cancel_changes
-		btn_cancel_changes = new Button.with_label("  " + _("Close"));
-		btn_cancel_changes.set_image (new Image.from_icon_name ("window-close", IconSize.MENU));
+		btn_cancel_changes = new Button.with_label("  " + _("Done"));
+		btn_cancel_changes.set_image (new Image.from_icon_name ("object-select-symbolic", IconSize.MENU));
         btn_cancel_changes.clicked.connect (btn_cancel_changes_clicked);
-        btn_cancel_changes.set_tooltip_text (_("Discard Changes"));
-        //btn_cancel_changes.set_size_request(-1,30);
+        btn_cancel_changes.set_tooltip_text (_("Close; your changes are already applied"));
 		hbox_action.add(btn_cancel_changes);
-		
+
+		delete_event.connect(() => {
+			flush_pending();
+			return false;
+		});
+
+		original_text = TeeJee.FileSystem.read_file(conkyrc.path) ?? "";
+		was_running = conkyrc.is_running();
+		connect_live_updates();
 		reload_widget_properties();
 	}
 
 	private void reload_widget_properties(){
 		ConkyRC conf = conkyrc;
+		loading = true;
 		
 		debug("-----------------------------------------------------");
 		debug(_("Loading") + ": %s".printf(conf.name));
@@ -550,8 +554,44 @@ public class EditWidgetWindow : Dialog {
 		}
 
 		loaded = control_values();
+		loading = false;
 
 		debug("-----------------------------------------------------");
+	}
+
+	/* every control applies its change shortly after it is made */
+	private void connect_live_updates() {
+		cmb_alignment.changed.connect(schedule_apply);
+		cmb_transparency_type.changed.connect(schedule_apply);
+		cmb_time_format.changed.connect(schedule_apply);
+		foreach (var spin in new SpinButton[]{ spin_gap_x, spin_gap_y, spin_opacity, spin_min_width, spin_min_height, spin_height_padding }) {
+			spin.value_changed.connect(schedule_apply);
+		}
+		cbtn_bg_color.color_set.connect(schedule_apply);
+		txt_network_device.changed.connect(schedule_apply);
+	}
+
+	// waits briefly so holding a +/- button or typing writes the file once
+	private void schedule_apply() {
+		if (loading) {
+			return;
+		}
+		if (apply_timer > 0) {
+			Source.remove(apply_timer);
+		}
+		apply_timer = Timeout.add(400, () => {
+			apply_timer = 0;
+			apply_changes();
+			return false;
+		});
+	}
+
+	private void flush_pending() {
+		if (apply_timer > 0) {
+			Source.remove(apply_timer);
+			apply_timer = 0;
+			apply_changes();
+		}
 	}
 
 	private Gee.HashMap<string,string> control_values() {
@@ -570,12 +610,11 @@ public class EditWidgetWindow : Dialog {
 		return v;
 	}
 	
-	private void btn_apply_changes_clicked () {
-		gtk_set_busy(true, this);
-
+	/* writes the controls that changed into the config. A running conky reloads
+	 * the file by itself; a stopped widget is started so the change is visible. */
+	private void apply_changes () {
 		ConkyRC conf = conkyrc;
-		
-		conf.stop();
+
 		conf.read_file();
 		
 		//check for 1.10 config version
@@ -652,19 +691,30 @@ public class EditWidgetWindow : Dialog {
 		
 		//save changes to file
 		conf.save_file();
-		
+
 		debug("-----------------------------------------------------");
-		
-		conf.start();
-		
-		gtk_set_busy(false, this);
+
+		if (!conf.is_running()) {
+			conf.start();
+		}
+		btn_discard_changes.sensitive = true;
 	}
-	
+
 	private void btn_discard_changes_clicked () {
+		if (apply_timer > 0) {
+			Source.remove(apply_timer);
+			apply_timer = 0;
+		}
+		write_file(conkyrc.path, original_text);
+		if (!was_running && conkyrc.is_running()) {
+			conkyrc.stop(); // live editing started it; put that back too
+		}
 		reload_widget_properties();
+		btn_discard_changes.sensitive = false;
 	}
-	
+
 	private void btn_cancel_changes_clicked () {
+		flush_pending();
 		this.destroy();
 	}
 	

@@ -37,7 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.3.0";
+public const string AppVersion = "3.3.1";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
