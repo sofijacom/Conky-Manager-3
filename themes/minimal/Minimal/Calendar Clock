@@ -2,8 +2,8 @@
 -- Time, date and weather beside this month's calendar
 -- Part of the Minimal widget pack for Conky Manager 3. Run one at a time:
 -- they all sit at the top middle of the screen.
--- Settings (12-hour clock, dark text, weather location/units) live at the top
--- of lua/minimal.lua.
+-- Settings (12-hour clock, text color, weather location/units) go in
+-- settings.lua in this folder, which is kept when the pack is updated.
 
 local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
 

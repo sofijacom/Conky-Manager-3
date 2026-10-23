@@ -24,6 +24,19 @@ SETTINGS = {
 	network_interface = '',
 }
 
+-- Your own settings go in settings.lua in the pack folder: it is read after
+-- these defaults and is kept when the pack is updated.
+do
+	local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
+	local path = dir .. '/../settings.lua'
+	local f = io.open(path, 'r')
+	if f then
+		f:close()
+		local ok, err = pcall(dofile, path)
+		if not ok then io.stderr:write('liquid-glass settings.lua: ' .. tostring(err) .. '\n') end
+	end
+end
+
 ---------------------------------------------------------------- setup
 
 local script_dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'

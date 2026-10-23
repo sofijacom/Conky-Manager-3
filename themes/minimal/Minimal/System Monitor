@@ -2,8 +2,8 @@
 -- CPU, GPU, memory, temperatures, fans, disks and network in one tall widget
 -- Part of the Minimal widget pack for Conky Manager 3. It sits where the right
 -- column of the Minimal theme goes, so use it instead of that column.
--- Settings (12-hour clock, dark text, weather location/units) live at the top
--- of lua/minimal.lua.
+-- Settings (12-hour clock, text color, weather location/units) go in
+-- settings.lua in this folder, which is kept when the pack is updated.
 
 local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
 

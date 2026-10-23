@@ -20,8 +20,8 @@ SETTINGS = {
 	-- first day of the week in the calendar, 1 = Sunday, 2 = Monday
 	week_start = 2,
 
-	-- 'auto' picks white or black text from the brightness of your wallpaper's
-	-- top-middle area; 'light' = always white, 'dark' = always black
+	-- 'auto' picks white or black text from the brightness of the wallpaper
+	-- behind each widget; 'light' = always white, 'dark' = always black
 	text = 'auto',
 	-- accent used for today in the calendar ({r, g, b}, 0..1); nil = same as the text
 	accent = nil,
@@ -40,6 +40,19 @@ SETTINGS = {
 	-- Network: interface to show; empty = the one holding the default route
 	network_interface = '',
 }
+
+-- Your own settings go in settings.lua in the pack folder: it is read after
+-- these defaults and is kept when the pack is updated.
+do
+	local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
+	local path = dir .. '/../settings.lua'
+	local f = io.open(path, 'r')
+	if f then
+		f:close()
+		local ok, err = pcall(dofile, path)
+		if not ok then io.stderr:write('minimal settings.lua: ' .. tostring(err) .. '\n') end
+	end
+end
 
 ---------------------------------------------------------------- setup
 

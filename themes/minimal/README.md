@@ -48,11 +48,11 @@ The four clocks share the top middle, so turn on one at a time. They don't overl
 
 ## Text color
 
-The text color follows your wallpaper. Each widget measures the brightness of the part of the wallpaper it sits on (top middle, left or right column) and uses white text on dark areas and black text on light ones, re-checking when the wallpaper changes. This works on Cinnamon, GNOME and MATE. To force a color, set `text = 'light'` or `text = 'dark'` at the top of `lua/minimal.lua`.
+The text color follows your wallpaper. Each widget measures the brightness of the part of the wallpaper it sits on (top middle, left or right column) and uses white text on dark areas and black text on light ones, re-checking when the wallpaper changes. This works on Cinnamon, GNOME and MATE. To force a color, set `SETTINGS.text = 'light'` or `'dark'` in `settings.lua`.
 
 ## Settings
 
-At the top of `lua/minimal.lua`: 12-hour clock, first day of the week, text color, accent color for today, shadow, weather location and units, hiding the weather, and the network interface. Position and size: `alignment`, `gap_x`, `gap_y`, `minimum_width` and `minimum_height` in each widget file, or **Edit Position and Look** in Conky Manager; a different size zooms the whole widget.
+Edit `settings.lua` in the `Minimal` folder: uncomment a line, change its value, and restart the widget. It covers the 12-hour clock, first day of the week, text color, accent color for today, shadow, weather location and units, hiding the weather, and the network interface. Your `settings.lua` and widget files are kept when the pack is updated. Position and size: `alignment`, `gap_x`, `gap_y`, `minimum_width` and `minimum_height` in each widget file, or **Edit Position and Look** in Conky Manager; a different size zooms the whole widget.
 
 Weather comes from [wttr.in](https://wttr.in) (no API key), refreshed every 15 minutes in the background. It sees your IP address; set a location to avoid IP-based lookup. Needs Conky with Lua and Cairo (`conky-all`), `curl`, and ImageMagick for the automatic text color.
 

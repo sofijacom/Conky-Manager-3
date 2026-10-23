@@ -37,7 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.2.0";
+public const string AppVersion = "3.3.0";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
@@ -297,6 +297,11 @@ public class Main : GLib.Object {
 
 	public void init_theme_packs(){
 		string sharePath = "/usr/share/conky-manager3/themepacks";
+		// running from a source checkout: use the packs next to the binary
+		string localPath = get_app_dir() + "/share/conky-manager3/themepacks";
+		if (dir_exists(localPath)){
+			sharePath = localPath;
+		}
 		string config_file = data_dir + "/.themepacks";
 
 		//create empty config file if missing
@@ -341,7 +346,8 @@ public class Main : GLib.Object {
 					if (!is_installed){
 						log_msg("-----------------------------------------------------");
 						log_msg(_("Found theme pack [new]") + ": " + filePath);
-						install_theme_pack(filePath);
+						// bundled packs may be newer versions of packs already in ~/.conky
+						install_theme_pack(filePath, false, true);
 						filenames.add(file.get_name());
 						log_msg("-----------------------------------------------------");
 
@@ -360,7 +366,21 @@ public class Main : GLib.Object {
 	    }
 	}
 
-	public bool install_theme_pack(string pkgPath, bool tarformat = false){
+	/* Copies an extracted folder into place. With keep_edits, files that already
+	 * exist are left alone (widget configs the user may have changed) except the
+	 * shared scripts in lua/ folders, which are updated; new files are added. */
+	private void copy_theme_folder(string src_path, string dst_path, bool keep_edits){
+		if (!keep_edits){
+			execute_command_sync("rsync -ai --numeric-ids '%s/' '%s'".printf(src_path,dst_path));
+			return;
+		}
+		string std_out, std_err;
+		string script = "rsync -a --numeric-ids --ignore-existing '%s/' '%s'\n".printf(src_path, dst_path);
+		script += "cd '%s' && find . -type d -name lua | while read -r d; do rsync -a --numeric-ids \"$d/\" \"%s/$d/\"; done\n".printf(src_path, dst_path);
+		execute_command_script_sync(script, out std_out, out std_err);
+	}
+
+	public bool install_theme_pack(string pkgPath, bool tarformat = false, bool keep_edits = false){
 		string cmd = "";
 		string std_out;
 		string std_err;
@@ -407,7 +427,7 @@ public class Main : GLib.Object {
 				}
 
 				//rsync folder
-				execute_command_sync("rsync -ai --numeric-ids '%s/' '%s'".printf(src_path,dst_path));
+				copy_theme_folder(src_path, dst_path, keep_edits);
                 archive_path_counter++;
 			}
 		}
@@ -423,7 +443,7 @@ public class Main : GLib.Object {
 			}
 
 			//rsync folder
-			execute_command_sync("rsync -ai --numeric-ids '%s/' '%s'".printf(src_path,dst_path));
+			copy_theme_folder(src_path, dst_path, keep_edits);
         }
 
 		//delete temp files

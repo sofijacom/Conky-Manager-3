@@ -22,7 +22,7 @@ Without Conky Manager, copy the `Liquid Glass` folder to `~/.conky/` and start a
 
 ## Settings
 
-- `lua/widgets.lua`, top of the file: 12-hour clock, first day of the week, weather location and units, network interface.
+- `settings.lua` in the `Liquid Glass` folder: 12-hour clock, first day of the week, weather location and units, network interface. Uncomment a line, change its value and restart the widget; this file and your widget files are kept when the pack is updated.
 - `lua/glass.lua`, `G.theme`: accent colors, text colors and the glass tint (raise the tint alpha if text is hard to read on a bright wallpaper).
 - Position and size: `alignment`, `gap_x`, `gap_y`, `minimum_width` and `minimum_height` in each widget file, or use Edit Position and Look in Conky Manager. A smaller or larger size zooms the whole widget.
 

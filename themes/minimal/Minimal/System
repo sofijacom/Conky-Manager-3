@@ -2,8 +2,8 @@
 -- CPU, memory and temperature rings, load, battery
 -- Part of the Minimal widget pack for Conky Manager 3 (desktop set: same
 -- widgets as Liquid Glass, without panels). Apply the Minimal theme for all seven.
--- Settings (12-hour clock, dark text, weather location/units) live at the top
--- of lua/minimal.lua.
+-- Settings (12-hour clock, text color, weather location/units) go in
+-- settings.lua in this folder, which is kept when the pack is updated.
 
 local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
 

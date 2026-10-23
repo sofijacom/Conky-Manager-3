@@ -1,8 +1,8 @@
 -- Liquid Glass · Network
 -- Live download/upload speeds with history
 -- Part of the Liquid Glass widget pack for Conky Manager 3.
--- Settings (12-hour clock, weather location/units, network interface) live at
--- the top of lua/widgets.lua; colors and glass strength in lua/glass.lua.
+-- Settings (12-hour clock, weather location/units, network interface) go in
+-- settings.lua in this folder, which is kept when the pack is updated.
 
 local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
 
