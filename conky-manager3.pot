@@ -316,8 +316,8 @@ msgstr ""
 #, c-format
 msgid "%d widget"
 msgid_plural "%d widgets"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:287
 msgid "wallpaper"
@@ -419,15 +419,15 @@ msgstr ""
 #, c-format
 msgid "%d theme"
 msgid_plural "%d themes"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:621
 #, c-format
 msgid "%d running"
 msgid_plural "%d running"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:642
 msgid "Looking for widgets…"
@@ -525,8 +525,8 @@ msgstr ""
 #, c-format
 msgid "%d widget on your desktop"
 msgid_plural "%d widgets on your desktop"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:784
 msgid "Nothing on your desktop"
@@ -548,8 +548,8 @@ msgstr ""
 #, c-format
 msgid "Starts %d second after you log in"
 msgid_plural "Starts %d seconds after you log in"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:791
 msgid "Widgets stay off after you log in"
@@ -567,8 +567,8 @@ msgstr ""
 #, c-format
 msgid "%d pack"
 msgid_plural "%d packs"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:817
 msgid "Edit position and look"
@@ -637,22 +637,22 @@ msgstr ""
 #, c-format
 msgid "Imported %d file"
 msgid_plural "Imported %d files"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:956
 #, c-format
 msgid "%d new widget"
 msgid_plural "%d new widgets"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:959
 #, c-format
 msgid "%d file could not be extracted"
 msgid_plural "%d files could not be extracted"
-msgstr ""
-msgstr ""
+msgstr[0] ""
+msgstr[1] ""
 
 #: ../src/Pages.vala:975
 msgid "Settings"
