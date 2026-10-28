@@ -8,6 +8,7 @@
 **v2.7** Fix 'Edit Widget' now includes network interface replacement for conky 'if_up' and 'addr' variables.
 **v2.72** French and German translations, lua detection additions, meson vscode and small fixes.
 **v2.73** Korean translation, debian packaging updates, add quality icon artwork.
+**v3.4.2** Transparency settings in Edit Position and Look work again: opacity starts at 100% instead of 0%, and changing the transparency type (or resetting it) restarts the widget so the change shows.
 **v3.4.1** The Keep aspect ratio checkbox (and other check boxes in dialogs) is drawn at a normal size in the app's green instead of a large square.
 **v3.4.0** Four new clocks in the Minimal pack: Headline Clock (the weekday in wide geometric capitals over the date and bold time) and Headline Clock 12h, Script Clock (huge time with the weekday handwritten across it, ships the Mr Dafoe font) and Pixel Clock (big LED-style pixel time in white and red with a small pixel date). Edit Position and Look has a Keep aspect ratio option (on by default): changing the width or height changes the other one too.
 **v3.3.1** Edit Position and Look applies changes live as you make them (no Apply button); Reset now restores the widget exactly as it was when the window opened.
