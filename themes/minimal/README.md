@@ -43,8 +43,17 @@ Anything your hardware doesn't have is left out. Readings turn orange when they 
 | Calendar Clock | Time, weekday, date and weather beside this month's calendar |
 | Weekday Clock | Letter-spaced weekday over the time, with date and weather |
 | Clock Bar | One slim line: time, date and weather |
+| Headline Clock | The weekday in big geometric capitals over the date and time |
+| Headline Clock 12h | The same, always with 12-hour time (08:22 PM) |
+| Pixel Clock | Big pixel-font time in white and red, with a small pixel date below |
 
-The four clocks share the top middle, so turn on one at a time. They don't overlap the desktop set, so you can add one to the Minimal theme.
+The seven clocks share the top middle, so turn on one at a time. They don't overlap the desktop set, so you can add one to the Minimal theme.
+
+## Script Clock
+
+![Script Clock](Minimal/Script%20Clock.png)
+
+Huge time with the weekday handwritten across it and the date below, in the middle of the screen. The weekday uses the [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe) font (SIL Open Font License, in `Minimal/fonts`), which Conky Manager installs to `~/.fonts`. Set its color with `SETTINGS.script_color` in `settings.lua`.
 
 ## Text color
 

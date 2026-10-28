@@ -21,4 +21,4 @@ build() { # build <theme dir under themes/> <pack name>
 }
 
 build liquid-glass liquid-glass-1.1.cmtp.7z
-build minimal minimal-1.1.cmtp.7z
+build minimal minimal-1.2.cmtp.7z
