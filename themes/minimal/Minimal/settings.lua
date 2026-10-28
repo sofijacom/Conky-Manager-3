@@ -14,6 +14,9 @@
 -- SETTINGS.accent = nil
 -- soft shadow behind text and icons (helps on busy wallpapers)
 -- SETTINGS.shadow = true
+-- color of the handwritten weekday in the Script Clock ({r, g, b}, 0..1);
+-- drawn at 70% opacity
+-- SETTINGS.script_color = {0.45, 0.45, 0.48}
 
 -- Weather: city name, airport code or "lat,lon"; empty = detect from your IP
 -- SETTINGS.weather_location = ''

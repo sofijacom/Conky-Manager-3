@@ -40,7 +40,7 @@ The same seven widgets in a modern, minimal style, drawn straight on the wallpap
 
 ![Minimal widgets on the desktop](docs/screenshots/desktop-minimal-set.jpg)
 
-The pack also has a **System Monitor** that tracks CPU, GPU, memory, temperatures, fans, disks and network in one widget, and four clocks for the top middle of the screen: **Hero Clock**, **Calendar Clock**, **Weekday Clock** and **Clock Bar**.
+The pack also has a **System Monitor** that tracks CPU, GPU, memory, temperatures, fans, disks and network in one widget, and seven clocks for the top middle of the screen: **Hero Clock**, **Calendar Clock**, **Weekday Clock**, **Clock Bar**, **Headline Clock**, **Headline Clock 12h** and **Pixel Clock**, plus a **Script Clock** for the middle of the screen.
 
 ![Minimal Calendar Clock on the desktop](docs/screenshots/desktop-minimal.jpg)
 

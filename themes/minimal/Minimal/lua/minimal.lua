@@ -6,7 +6,8 @@
   them readable on bright wallpapers; switch to dark text below if yours is light.
 
   Every widget config calls:  lua_draw_hook_pre = 'minimal_main <widget> <width> <height>'
-  Clocks for the top middle: hero, calendar, weekday, bar
+  Clocks for the top middle: hero, calendar, weekday, bar, headline, pixel;
+  in the middle: script
   Desktop set (same data as Liquid Glass): week, weather, system, network,
   storage, processes, media
   System monitor: monitor (CPU, GPU, memory, temperatures, fans, disks, network)
@@ -27,6 +28,9 @@ SETTINGS = {
 	accent = nil,
 	-- soft shadow behind text and icons (helps on busy wallpapers)
 	shadow = true,
+	-- color of the handwritten weekday in the Script Clock ({r, g, b}, 0..1);
+	-- drawn at 70% opacity
+	script_color = {0.45, 0.45, 0.48},
 
 	-- Weather: city name, airport code or "lat,lon"; empty = detect from your IP
 	weather_location = '',
@@ -89,6 +93,24 @@ for _, family in ipairs({'Inter', 'SF Pro Display', 'Ubuntu', 'Cantarell', 'Noto
 		if resolves_to(family .. ' Thin', 'Thin') then FONT_THIN = family .. ' Thin' end
 		break
 	end
+end
+
+-- handwriting face for the Script Clock, shipped in the pack's fonts/ folder;
+-- found (and installed if needed) the first time that clock draws
+local FONT_SCRIPT = nil
+local script_checked = false
+
+local function find_script_font()
+	if script_checked then return end
+	script_checked = true
+	if not font_installed('Mr Dafoe') then
+		-- Conky Manager copies pack fonts to ~/.fonts; do the same when run directly
+		local dir = debug.getinfo(1, 'S').source:match('^@(.*)/[^/]*$') or '.'
+		local fonts = (os.getenv('HOME') or '') .. '/.fonts'
+		os.execute(string.format("mkdir -p '%s' && cp -n '%s/../fonts/'*.ttf '%s/' && fc-cache -f '%s'",
+			fonts, (dir:gsub("'", "'\\''")), fonts, fonts))
+	end
+	if font_installed('Mr Dafoe') then FONT_SCRIPT = 'Mr Dafoe' end
 end
 
 ---------------------------------------------------------------- automatic text color
@@ -200,8 +222,13 @@ local extents = nil
 
 -- returns the outline width to emulate this weight (0 = draw normally)
 local function set_font(cr, size, weight)
-	local family, w, outline = FONT, CAIRO_FONT_WEIGHT_NORMAL, 0
-	if weight == 'thin' then
+	local family, w, outline, slant = FONT, CAIRO_FONT_WEIGHT_NORMAL, 0, CAIRO_FONT_SLANT_NORMAL
+	if weight == 'heavy' then
+		-- bold with an outline: extra-bold faces can't be picked by name
+		w, outline = CAIRO_FONT_WEIGHT_BOLD, size * 0.03
+	elseif weight == 'script' then
+		if FONT_SCRIPT then family = FONT_SCRIPT else slant = CAIRO_FONT_SLANT_ITALIC end
+	elseif weight == 'thin' then
 		family = FONT_THIN or FONT_LIGHT or FONT
 	elseif weight == 'light' then
 		if FONT_LIGHT then
@@ -212,7 +239,7 @@ local function set_font(cr, size, weight)
 	elseif weight == 'bold' then
 		w = CAIRO_FONT_WEIGHT_BOLD
 	end
-	cairo_select_font_face(cr, family, CAIRO_FONT_SLANT_NORMAL, w)
+	cairo_select_font_face(cr, family, slant, w)
 	cairo_set_font_size(cr, size)
 	return outline
 end
@@ -437,9 +464,11 @@ end
 
 ---------------------------------------------------------------- data
 
-local function time_parts(now)
+-- twelve overrides SETTINGS.twelve_hour when given
+local function time_parts(now, twelve)
 	local t = os.date('*t', now)
-	if SETTINGS.twelve_hour then
+	if twelve == nil then twelve = SETTINGS.twelve_hour end
+	if twelve then
 		return tostring(((t.hour + 11) % 12) + 1) .. os.date(':%M', now), (t.hour < 12) and 'AM' or 'PM'
 	end
 	return os.date('%H:%M', now), nil
@@ -654,6 +683,372 @@ function W.bar(cr, w, h)
 		hairline(cr, x + 22, y - 24, x + 22, y + 4, 0.45)
 		x = x + 44
 		weather_line(cr, x, y - 2, 20, 'left', false)
+	end
+end
+
+---------------------------------------------------------------- display lettering
+
+--[[ Wide geometric capitals for the weekday names, drawn as strokes so no font
+     is needed. Each glyph is drawn in a box `w` wide and 1 tall (the cap height),
+     y down; strokes run along centerlines and are clipped to the box, so ends
+     that run past it come out square. ]]
+
+local GT = 0.15      -- stroke thickness
+local GH = GT / 2
+local GAP = 0.42     -- space between letters
+
+local function seg(cr, x0, y0, x1, y1)
+	cairo_move_to(cr, x0, y0)
+	cairo_line_to(cr, x1, y1)
+end
+
+-- x on the line through (x0, y0) and (x1, y1) at height y
+local function at_y(x0, y0, x1, y1, y)
+	return x0 + (x1 - x0) * (y - y0) / (y1 - y0)
+end
+
+local function rrect(cr, x0, y0, x1, y1, r)
+	cairo_new_sub_path(cr)
+	cairo_arc(cr, x1 - r, y0 + r, r, -math.pi / 2, 0)
+	cairo_arc(cr, x1 - r, y1 - r, r, 0, math.pi / 2)
+	cairo_arc(cr, x0 + r, y1 - r, r, math.pi / 2, math.pi)
+	cairo_arc(cr, x0 + r, y0 + r, r, math.pi, 3 * math.pi / 2)
+	cairo_close_path(cr)
+end
+
+local GLYPHS = {
+	A = {w = 0.9, draw = function(cr, w)
+		local c = w / 2
+		cairo_move_to(cr, at_y(c, 0, GH, 1, 1.2), 1.2)
+		cairo_line_to(cr, c, 0)
+		cairo_line_to(cr, at_y(c, 0, w - GH, 1, 1.2), 1.2)
+		seg(cr, c - 0.09, 1 - GH, c + 0.09, 1 - GH) -- the crossbar, dropped to the baseline
+	end},
+	D = {w = 0.82, draw = function(cr, w)
+		local r = 0.5 - GH
+		cairo_move_to(cr, GH, 0.34) -- the stem stops short of the top
+		cairo_line_to(cr, GH, 1 - GH)
+		cairo_line_to(cr, w - GH - r, 1 - GH)
+		cairo_arc_negative(cr, w - GH - r, 0.5, r, math.pi / 2, -math.pi / 2)
+		cairo_line_to(cr, 0, GH)
+	end},
+	E = {w = 0.68, draw = function(cr, w)
+		cairo_move_to(cr, w, GH)
+		cairo_line_to(cr, GH, GH)
+		cairo_line_to(cr, GH, 1 - GH)
+		cairo_line_to(cr, w, 1 - GH)
+		seg(cr, GT + 0.08, 0.5, w - 0.06, 0.5)
+	end},
+	F = {w = 0.66, draw = function(cr, w)
+		cairo_move_to(cr, w, GH)
+		cairo_line_to(cr, GH, GH)
+		cairo_line_to(cr, GH, 1)
+		seg(cr, GT + 0.08, 0.52, w - 0.08, 0.52)
+	end},
+	H = {w = 0.8, draw = function(cr, w)
+		seg(cr, GH, 0, GH, 1)
+		seg(cr, w - GH, 0, w - GH, 1)
+		seg(cr, GH, 0.5, w - GH, 0.5)
+	end},
+	I = {w = GT, draw = function(cr, w)
+		seg(cr, GH, 0, GH, 1)
+	end},
+	M = {w = 1.0, draw = function(cr, w)
+		cairo_move_to(cr, GH, 1)
+		cairo_line_to(cr, GH, GH)
+		cairo_line_to(cr, w / 2, 0.62)
+		cairo_line_to(cr, w - GH, GH)
+		cairo_line_to(cr, w - GH, 1)
+	end},
+	N = {w = 0.8, draw = function(cr, w)
+		cairo_move_to(cr, GH, 1)
+		cairo_line_to(cr, GH, GH)
+		cairo_line_to(cr, w - GH, 1 - GH)
+		cairo_line_to(cr, w - GH, 0)
+	end},
+	O = {w = 0.9, draw = function(cr, w)
+		rrect(cr, GH, GH, w - GH, 1 - GH, 0.32)
+	end},
+	R = {w = 0.78, draw = function(cr, w)
+		local r = (0.56 - GH) / 2
+		cairo_move_to(cr, GH, 1)
+		cairo_line_to(cr, GH, GH)
+		cairo_line_to(cr, w - GH - r, GH)
+		cairo_arc(cr, w - GH - r, GH + r, r, -math.pi / 2, math.pi / 2)
+		cairo_line_to(cr, GH, GH + 2 * r)
+		local x0, y0, x1, y1 = 0.36, GH + 2 * r, w - GH, 1 - GH
+		seg(cr, x0, y0, at_y(x0, y0, x1, y1, 1.2), 1.2)
+	end},
+	S = {w = 0.8, draw = function(cr, w)
+		local r = (0.5 - GH) / 2
+		cairo_move_to(cr, w, GH)
+		cairo_line_to(cr, GH + r, GH)
+		cairo_arc_negative(cr, GH + r, GH + r, r, -math.pi / 2, math.pi / 2)
+		cairo_line_to(cr, w - GH - r, 0.5)
+		cairo_arc(cr, w - GH - r, 0.5 + r, r, -math.pi / 2, math.pi / 2)
+		cairo_line_to(cr, 0, 1 - GH)
+	end},
+	T = {w = 0.8, draw = function(cr, w)
+		seg(cr, 0, GH, w, GH)
+		seg(cr, w / 2, GH, w / 2, 1)
+	end},
+	U = {w = 0.8, draw = function(cr, w)
+		local r = w / 2 - GH
+		cairo_move_to(cr, GH, 0)
+		cairo_line_to(cr, GH, 1 - GH - r)
+		cairo_arc_negative(cr, w / 2, 1 - GH - r, r, math.pi, 0)
+		cairo_line_to(cr, w - GH, 0)
+	end},
+	W = {w = 1.1, draw = function(cr, w)
+		cairo_move_to(cr, GH, 0)
+		cairo_line_to(cr, GH, 1 - GH)
+		cairo_line_to(cr, w / 2, 0.38)
+		cairo_line_to(cr, w - GH, 1 - GH)
+		cairo_line_to(cr, w - GH, 0)
+	end},
+	Y = {w = 0.86, draw = function(cr, w)
+		local c, m = w / 2, 0.52
+		cairo_move_to(cr, at_y(c, m, GH, 0, -0.2), -0.2)
+		cairo_line_to(cr, c, m)
+		cairo_line_to(cr, at_y(c, m, w - GH, 0, -0.2), -0.2)
+		seg(cr, c, m, c, 1)
+	end},
+}
+
+-- width of word in cap heights, or nil if a letter has no glyph
+local function lettering_width(word)
+	local w, list = 0, chars(word)
+	for _, ch in ipairs(list) do
+		local g = GLYPHS[ch]
+		if not g then return nil end
+		w = w + g.w
+	end
+	return w + GAP * math.max(#list - 1, 0)
+end
+
+-- strokes every glyph of word, top-left at (x, y), cap height cap;
+-- grow widens the stroke and the clip (for the shadow)
+local function stroke_lettering(cr, word, x, y, cap, grow, rgba)
+	for _, ch in ipairs(chars(word)) do
+		local g = GLYPHS[ch]
+		local pad = grow / 2 / cap
+		cairo_save(cr)
+		cairo_translate(cr, x, y)
+		cairo_scale(cr, cap, cap)
+		cairo_rectangle(cr, -pad, -pad, g.w + 2 * pad, 1 + 2 * pad)
+		cairo_clip(cr)
+		cairo_new_path(cr)
+		g.draw(cr, g.w)
+		cairo_set_line_width(cr, GT + grow / cap)
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT)
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER)
+		cairo_set_miter_limit(cr, 20)
+		cairo_set_source_rgba(cr, rgba[1], rgba[2], rgba[3], rgba[4])
+		cairo_stroke(cr)
+		cairo_restore(cr)
+		x = x + (g.w + GAP) * cap
+	end
+end
+
+-- word centered on cx with its top at y; shrinks to fit max_w.
+-- Names with letters outside the set (other languages) fall back to the font.
+local function lettering(cr, word, cx, y, cap, max_w)
+	local em = lettering_width(word)
+	if not em then
+		local size = cap * 1.25
+		local tw = measure(cr, word, size, 'bold', cap * 0.25)
+		if tw > max_w then size = size * max_w / tw end
+		text(cr, word, cx, y + cap, {size = size, weight = 'bold', tracking = size * 0.2, align = 'center'})
+		return
+	end
+	cap = math.min(cap, max_w / em)
+	local x = cx - em * cap / 2
+	if SETTINGS.shadow then
+		-- same soft shadow as text: lowered, stroked wide and faint
+		local r, g, b = shadow_rgb()
+		local radius = math.min(math.max(1, cap / 40), 3)
+		local dy = y + radius * 0.8
+		stroke_lettering(cr, word, x, dy, cap, radius * 4, {r, g, b, 0.05})
+		stroke_lettering(cr, word, x, dy, cap, radius * 2, {r, g, b, 0.07})
+		stroke_lettering(cr, word, x, dy, cap, 0, {r, g, b, 0.12})
+	end
+	stroke_lettering(cr, word, x, y, cap, 0, ink(1))
+end
+
+-- big geometric weekday over a letter-spaced date and time;
+-- twelve forces 12-hour time (nil follows SETTINGS.twelve_hour)
+function W.headline(cr, w, h, twelve)
+	local now = os.time()
+	local cx = w / 2
+	lettering(cr, os.date('%A', now):upper(), cx, 44, 80, w - 60)
+	local date = os.date('%d %B %Y', now):upper()
+	text(cr, date, cx, 184, {size = 24, weight = 'normal', tracking = 3, align = 'center', alpha = 0.95})
+	local time_str, ampm = time_parts(now, twelve)
+	if ampm then
+		-- 08:22 PM: pad the hour so the line keeps its width
+		if #time_str == 4 then time_str = '0' .. time_str end
+		time_str = time_str .. ' ' .. ampm
+	end
+	text(cr, '-  ' .. time_str .. '  -', cx, 230, {size = 30, weight = 'bold', tracking = 3, align = 'center', alpha = 0.95})
+end
+
+-- the same, always in 12-hour time
+function W.headline12(cr, w, h)
+	W.headline(cr, w, h, true)
+end
+
+-- huge heavy time with the weekday handwritten across it, date below
+function W.script(cr, w, h)
+	find_script_font()
+	local now = os.time()
+	local cx = w / 2
+	local time_str, ampm = time_parts(now)
+	-- opaque: the heavy outline overlaps the fill, so any transparency shows a seam
+	local numerals = DARK and ink(1) or {0.94, 0.94, 0.96}
+	text(cr, (time_str:gsub(':', '.')), cx, 222, {size = 210, weight = 'heavy', align = 'center', color = numerals})
+
+	local c = SETTINGS.script_color
+	cairo_save(cr)
+	cairo_translate(cr, cx + 8, 172)
+	cairo_rotate(cr, -0.07)
+	text(cr, os.date('%A', now), 0, 0, {size = 108, weight = 'script', align = 'center', color = c, alpha = 0.7})
+	cairo_restore(cr)
+
+	local date = tostring(os.date('*t', now).day) .. os.date(' %B %Y', now):upper()
+	if ampm then date = date .. '  ·  ' .. ampm end
+	text(cr, date, cx, 282, {size = 24, weight = 'normal', tracking = 2.5, align = 'center', alpha = 0.95})
+end
+
+---------------------------------------------------------------- pixel font
+
+-- 5 x 7 bitmap capitals and digits; '#' is a lit pixel
+local PIXELS = {
+	['0'] = {' ### ', '#   #', '#   #', '#   #', '#   #', '#   #', ' ### '},
+	['1'] = {'  #  ', ' ##  ', '  #  ', '  #  ', '  #  ', '  #  ', ' ### '},
+	['2'] = {' ### ', '#   #', '    #', '   # ', '  #  ', ' #   ', '#####'},
+	['3'] = {'#####', '   # ', '  #  ', '   # ', '    #', '#   #', ' ### '},
+	['4'] = {'   # ', '  ## ', ' # # ', '#  # ', '#####', '   # ', '   # '},
+	['5'] = {'#####', '#    ', '#### ', '    #', '    #', '#   #', ' ### '},
+	['6'] = {'  ## ', ' #   ', '#    ', '#### ', '#   #', '#   #', ' ### '},
+	['7'] = {'#####', '    #', '   # ', '  #  ', ' #   ', ' #   ', ' #   '},
+	['8'] = {' ### ', '#   #', '#   #', ' ### ', '#   #', '#   #', ' ### '},
+	['9'] = {' ### ', '#   #', '#   #', ' ####', '    #', '   # ', ' ##  '},
+	A = {' ### ', '#   #', '#   #', '#####', '#   #', '#   #', '#   #'},
+	B = {'#### ', '#   #', '#   #', '#### ', '#   #', '#   #', '#### '},
+	C = {' ### ', '#   #', '#    ', '#    ', '#    ', '#   #', ' ### '},
+	D = {'#### ', '#   #', '#   #', '#   #', '#   #', '#   #', '#### '},
+	E = {'#####', '#    ', '#    ', '#### ', '#    ', '#    ', '#####'},
+	F = {'#####', '#    ', '#    ', '#### ', '#    ', '#    ', '#    '},
+	G = {' ### ', '#   #', '#    ', '# ###', '#   #', '#   #', ' ####'},
+	H = {'#   #', '#   #', '#   #', '#####', '#   #', '#   #', '#   #'},
+	I = {' ### ', '  #  ', '  #  ', '  #  ', '  #  ', '  #  ', ' ### '},
+	J = {'  ###', '   # ', '   # ', '   # ', '   # ', '#  # ', ' ##  '},
+	K = {'#   #', '#  # ', '# #  ', '##   ', '# #  ', '#  # ', '#   #'},
+	L = {'#    ', '#    ', '#    ', '#    ', '#    ', '#    ', '#####'},
+	M = {'#   #', '## ##', '# # #', '# # #', '#   #', '#   #', '#   #'},
+	N = {'#   #', '#   #', '##  #', '# # #', '#  ##', '#   #', '#   #'},
+	O = {' ### ', '#   #', '#   #', '#   #', '#   #', '#   #', ' ### '},
+	P = {'#### ', '#   #', '#   #', '#### ', '#    ', '#    ', '#    '},
+	Q = {' ### ', '#   #', '#   #', '#   #', '# # #', '#  # ', ' ## #'},
+	R = {'#### ', '#   #', '#   #', '#### ', '# #  ', '#  # ', '#   #'},
+	S = {' ####', '#    ', '#    ', ' ### ', '    #', '    #', '#### '},
+	T = {'#####', '  #  ', '  #  ', '  #  ', '  #  ', '  #  ', '  #  '},
+	U = {'#   #', '#   #', '#   #', '#   #', '#   #', '#   #', ' ### '},
+	V = {'#   #', '#   #', '#   #', '#   #', '#   #', ' # # ', '  #  '},
+	W = {'#   #', '#   #', '#   #', '# # #', '# # #', '# # #', ' # # '},
+	X = {'#   #', '#   #', ' # # ', '  #  ', ' # # ', '#   #', '#   #'},
+	Y = {'#   #', '#   #', ' # # ', '  #  ', '  #  ', '  #  ', '  #  '},
+	Z = {'#####', '    #', '   # ', '  #  ', ' #   ', '#    ', '#####'},
+	[':'] = {' ', ' ', '#', ' ', '#', ' ', ' '},
+	['.'] = {' ', ' ', ' ', ' ', ' ', ' ', '#'},
+	['-'] = {'   ', '   ', '   ', '###', '   ', '   ', '   '},
+	[' '] = {'   ', '   ', '   ', '   ', '   ', '   ', '   '},
+}
+
+-- width of str in pixel columns (one blank column between glyphs),
+-- or nil if a character has no glyph
+local function pixel_cols(str)
+	local cols, n = 0, 0
+	for _, ch in ipairs(chars(str)) do
+		local g = PIXELS[ch]
+		if not g then return nil end
+		cols, n = cols + #g[1], n + 1
+	end
+	return cols + math.max(n - 1, 0)
+end
+
+-- draws str with its top-left at (x, y) in px-sized squares;
+-- color(i) gives the {r, g, b, a} of the i-th character; unlit = alpha of the
+-- dark cells drawn behind digits (0 = none)
+local function pixel_text(cr, str, x, y, px, color, unlit)
+	local cell = px * 0.84 -- the gap between squares gives the LED-matrix look
+	local list = chars(str)
+	-- adds the squares of glyph g (lit or unlit ones) at column x0 to the path
+	local function squares(g, x0, y0, lit)
+		for r, row in ipairs(g) do
+			for c = 1, #row do
+				if (row:sub(c, c) == '#') == lit then
+					cairo_rectangle(cr, x0 + (c - 1) * px, y0 + (r - 1) * px, cell, cell)
+				end
+			end
+		end
+	end
+	local function fill(k)
+		cairo_set_source_rgba(cr, k[1], k[2], k[3], k[4] or 1)
+		cairo_fill(cr)
+	end
+
+	local offset = math.max(1, px * 0.1)
+	local gx = x
+	for i, ch in ipairs(list) do
+		local g = PIXELS[ch]
+		if unlit > 0 and ch:match('%d') then squares(g, gx, y, false) end
+		gx = gx + (#g[1] + 1) * px
+	end
+	if unlit > 0 then fill(ink(unlit)) end
+	if SETTINGS.shadow then
+		local r, g, b = shadow_rgb()
+		gx = x
+		for _, ch in ipairs(list) do
+			squares(PIXELS[ch], gx + offset, y + offset, true)
+			gx = gx + (#PIXELS[ch][1] + 1) * px
+		end
+		fill({r, g, b, 0.25})
+	end
+	gx = x
+	for i, ch in ipairs(list) do
+		squares(PIXELS[ch], gx, y, true)
+		fill(color(i))
+		gx = gx + (#PIXELS[ch][1] + 1) * px
+	end
+end
+
+local PIXEL_RED = {0.93, 0.19, 0.21, 1}
+
+-- big pixel time (white hours, red minutes) over a small pixel date
+function W.pixel(cr, w, h)
+	local now = os.time()
+	local cx = w / 2
+	local time_str, ampm = time_parts(now)
+	local px = 20
+	local cols = pixel_cols(time_str)
+	local colon = time_str:find(':')
+	pixel_text(cr, time_str, cx - cols * px / 2, 24, px, function(i)
+		return i < colon and ink(1) or PIXEL_RED
+	end, 0.06)
+
+	-- ASCII-only abbreviations draw in pixels; other languages fall back to the font
+	local day = os.date('%a', now):upper()
+	local date = day .. ' ' .. os.date('%d %b %Y', now):upper() .. (ampm and (' ' .. ampm) or '')
+	local dpx = 5
+	local dcols = pixel_cols(date)
+	if dcols then
+		local n = #chars(day)
+		pixel_text(cr, date, cx - dcols * dpx / 2, 24 + 7 * px + 34, dpx, function(i)
+			return i <= n and PIXEL_RED or ink(1)
+		end, 0)
+	else
+		text(cr, date, cx, 24 + 7 * px + 66, {size = 26, weight = 'bold', tracking = 3, align = 'center'})
 	end
 end
 
