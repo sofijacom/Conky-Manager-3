@@ -515,7 +515,7 @@ public class EditWidgetWindow : Dialog {
 		gtk_combobox_set_value(cmb_transparency_type,1,conf.transparency);
 		
 		if (conf.own_window_argb_value == ""){
-			spin_opacity.value = 0;
+			spin_opacity.value = 100; // conky's default own_window_argb_value is 255
 		}
 		else{
 			spin_opacity.value = (int.parse(conf.own_window_argb_value) / 255.0) * 100;
@@ -734,7 +734,9 @@ public class EditWidgetWindow : Dialog {
 
 		debug("-----------------------------------------------------");
 
-		if (!conf.is_running()) {
+		// a running conky reloads the file by itself, but it can't switch its window
+		// to another transparency type that way; restart it for those
+		if (!conf.is_running() || ("transparency" in changed)) {
 			conf.start();
 		}
 		btn_discard_changes.sensitive = true;
@@ -745,11 +747,15 @@ public class EditWidgetWindow : Dialog {
 			Source.remove(apply_timer);
 			apply_timer = 0;
 		}
+		string applied_transparency = loaded["transparency"];
 		write_file(conkyrc.path, original_text);
 		if (!was_running && conkyrc.is_running()) {
 			conkyrc.stop(); // live editing started it; put that back too
 		}
 		reload_widget_properties();
+		if (conkyrc.is_running() && (loaded["transparency"] != applied_transparency)) {
+			conkyrc.start(); // a reload can't switch the transparency type back
+		}
 		btn_discard_changes.sensitive = false;
 	}
 
@@ -762,6 +768,9 @@ public class EditWidgetWindow : Dialog {
 		switch (gtk_combobox_get_value(cmb_transparency_type,1,"semi")){
 			case "semi":
 				spin_opacity.sensitive = true;
+				if (!loading && (spin_opacity.value == 0)) {
+					spin_opacity.value = 50; // coming from fully transparent: show something
+				}
 				break;
 			default:
 				spin_opacity.sensitive = false;
