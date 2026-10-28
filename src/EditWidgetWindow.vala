@@ -51,6 +51,7 @@ public class EditWidgetWindow : Dialog {
 	private SpinButton spin_min_width;
 	private SpinButton spin_min_height;
 	private SpinButton spin_height_padding;
+	private CheckButton chk_keep_ratio;
 	private ColorButton cbtn_bg_color;
 	private Entry txt_network_device;
 	private Button btn_wifi;
@@ -62,6 +63,9 @@ public class EditWidgetWindow : Dialog {
 	private string original_text = "";
 	private bool was_running = false;
 	private bool loading = false;
+	// width / height to hold while Keep aspect ratio is on (0 = unknown)
+	private double size_ratio = 0;
+	private bool syncing_size = false;
 	private uint apply_timer = 0;
 	// control values as loaded; Apply only writes settings the user changed
 	private Gee.HashMap<string,string> loaded = new Gee.HashMap<string,string>();
@@ -212,6 +216,12 @@ public class EditWidgetWindow : Dialog {
 		spin_min_height.value = 100.0;
 		spin_min_height.set_tooltip_text(tt);
 		grid_widget_size.attach(spin_min_height,1,row,1,1);
+
+		//chk_keep_ratio
+		chk_keep_ratio = new CheckButton.with_label(_("Keep aspect ratio"));
+		chk_keep_ratio.active = true;
+		chk_keep_ratio.set_tooltip_text(_("Changing the width or height changes the other one too, so the widget keeps its shape"));
+		grid_widget_size.attach(chk_keep_ratio,1,++row,1,1);
 		
 		tt = _("Increases the window height by adding empty lines at the end of the Conky config file");
 		
@@ -553,6 +563,7 @@ public class EditWidgetWindow : Dialog {
 			txt_network_device.text = net.strip();
 		}
 
+		remember_ratio();
 		loaded = control_values();
 		loading = false;
 
@@ -569,6 +580,32 @@ public class EditWidgetWindow : Dialog {
 		}
 		cbtn_bg_color.color_set.connect(schedule_apply);
 		txt_network_device.changed.connect(schedule_apply);
+		spin_min_width.value_changed.connect(() => keep_ratio(true));
+		spin_min_height.value_changed.connect(() => keep_ratio(false));
+		chk_keep_ratio.toggled.connect(remember_ratio);
+	}
+
+	private void remember_ratio() {
+		size_ratio = (spin_min_height.value > 0) ? spin_min_width.value / spin_min_height.value : 0;
+	}
+
+	// with Keep aspect ratio on, sets the other dimension to match the one changed
+	private void keep_ratio(bool width_changed) {
+		if (loading || syncing_size || !chk_keep_ratio.active) {
+			return;
+		}
+		if (size_ratio <= 0) {
+			remember_ratio(); // no shape to keep yet (a size was 0); start from this one
+			return;
+		}
+		syncing_size = true;
+		if (width_changed) {
+			spin_min_height.value = Math.round(spin_min_width.value / size_ratio);
+		}
+		else {
+			spin_min_width.value = Math.round(spin_min_height.value * size_ratio);
+		}
+		syncing_size = false;
 	}
 
 	// waits briefly so holding a +/- button or typing writes the file once
