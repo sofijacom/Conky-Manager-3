@@ -381,14 +381,27 @@ button.tab:checked label { color: #2a1b47; }
 }
 .cm-dialog separator { background-color: rgba(255, 255, 255, 0.12); }
 .cm-dialog textview text { background-color: rgba(0, 0, 0, 0.2); color: #ffffff; }
+/* fixed size: the GTK theme's padding otherwise stretches the colored box */
 .cm-dialog checkbutton check, .cm-dialog radiobutton radio {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0 8px 0 0;
   background-color: rgba(255, 255, 255, 0.14);
   background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: none;
   color: #ffffff;
 }
-.cm-dialog checkbutton check:checked, .cm-dialog radiobutton radio:checked { background-color: #34c47c; border-color: #34c47c; }
+.cm-dialog checkbutton check { border-radius: 5px; }
+.cm-dialog radiobutton radio { border-radius: 999px; }
+.cm-dialog checkbutton check:checked, .cm-dialog radiobutton radio:checked {
+  background-color: #34c47c;
+  background-image: none;
+  border-color: #34c47c;
+}
+/* the theme's checked box is an image in its own color; draw a plain tick on the green instead */
+.cm-dialog checkbutton check:checked { -gtk-icon-source: -gtk-icontheme("object-select-symbolic"); }
 """;
 
 	/* gives a dialog the main window's look */

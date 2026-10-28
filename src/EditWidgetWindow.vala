@@ -221,6 +221,9 @@ public class EditWidgetWindow : Dialog {
 		chk_keep_ratio = new CheckButton.with_label(_("Keep aspect ratio"));
 		chk_keep_ratio.active = true;
 		chk_keep_ratio.set_tooltip_text(_("Changing the width or height changes the other one too, so the widget keeps its shape"));
+		chk_keep_ratio.halign = Align.START;
+		chk_keep_ratio.margin_start = 4;
+		chk_keep_ratio.margin_bottom = 6;
 		grid_widget_size.attach(chk_keep_ratio,1,++row,1,1);
 		
 		tt = _("Increases the window height by adding empty lines at the end of the Conky config file");
