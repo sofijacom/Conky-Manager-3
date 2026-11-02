@@ -1,6 +1,6 @@
 # Liquid Glass widgets
 
-Seven translucent "liquid glass" Conky widgets: frosted panels with a bright rim, specular sheen and soft shadow.
+Nine translucent "liquid glass" Conky widgets: frosted panels with a bright rim, specular sheen and soft shadow.
 
 ![Liquid Glass](Liquid%20Glass/Liquid%20Glass.jpg)
 
@@ -13,6 +13,8 @@ Seven translucent "liquid glass" Conky widgets: frosted panels with a bright rim
 | Network | Live download/upload speeds with a history graph, Wi-Fi name, IP, totals |
 | Storage | Free space on each disk and current disk read/write |
 | Processes | Top 5 processes by CPU with memory use |
+| Quick Stats | Compact panel: CPU, memory and system disk bars, plus network download/upload speeds |
+| Quick Stats Light | The same on a white panel with dark text, for light wallpapers |
 
 ## Install
 

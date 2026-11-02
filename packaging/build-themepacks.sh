@@ -20,5 +20,5 @@ build() { # build <theme dir under themes/> <pack name>
     echo "$OUT/$2"
 }
 
-build liquid-glass liquid-glass-1.1.cmtp.7z
+build liquid-glass liquid-glass-1.2.cmtp.7z
 build minimal minimal-1.2.cmtp.7z

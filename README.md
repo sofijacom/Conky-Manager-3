@@ -30,7 +30,7 @@ Two packs come with the app and are added to `~/.conky` the first time it runs.
 
 ### Liquid Glass
 
-Frosted glass panels with a bright rim and soft shadow: clock with this week's days, weather, system (CPU, memory, temperature, battery), network speeds with a live graph, storage, top processes, and now playing. Apply the **Liquid Glass** theme to get all of them plus the matching wallpaper. [More about Liquid Glass](themes/liquid-glass)
+Frosted glass panels with a bright rim and soft shadow: clock with this week's days, weather, system (CPU, memory, temperature, battery), network speeds with a live graph, storage, top processes, and now playing, plus a compact **Quick Stats** panel (CPU, memory, disk and network) in dark and light versions. Apply the **Liquid Glass** theme to get all of them plus the matching wallpaper. [More about Liquid Glass](themes/liquid-glass)
 
 ![Liquid Glass widgets on the desktop](docs/screenshots/desktop-liquid-glass.jpg)
 

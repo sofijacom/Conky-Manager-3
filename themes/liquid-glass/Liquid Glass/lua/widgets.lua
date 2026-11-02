@@ -2,7 +2,7 @@
   widgets.lua - Liquid Glass widgets for Conky
 
   Every widget config calls:  lua_draw_hook_pre = 'glass_main <widget> <scale>'
-  Widgets: clock, weather, system, network, storage, processes, media
+  Widgets: clock, weather, system, network, storage, processes, media, stats, stats_light
 ]]
 
 ---------------------------------------------------------------- settings
@@ -439,6 +439,132 @@ function W.storage(cr, w, h)
 	G.text(cr, 'Read  ' .. trim(parse('${diskio_read}')), x, by, {size = 12, color = T.sub})
 	G.text(cr, 'Write  ' .. trim(parse('${diskio_write}')), px + pw - 22, by, {size = 12, color = T.sub, align = 'right'})
 end
+
+---------------------------------------------------------------- quick stats
+
+-- bytes -> "2.9 GB" (decimal units, like file managers show)
+local function fmt_bytes(b)
+	if b >= 1e12 then return string.format('%.1f TB', b / 1e12) end
+	if b >= 1e9 then return string.format('%.1f GB', b / 1e9) end
+	return string.format('%.0f MB', b / 1e6)
+end
+
+local function meminfo()
+	local info = read_file('/proc/meminfo') or ''
+	local total = tonumber(info:match('MemTotal:%s+(%d+)')) or 0
+	local avail = tonumber(info:match('MemAvailable:%s+(%d+)')) or 0
+	return (total - avail) * 1024, total * 1024
+end
+
+local disk_cache, disk_time = nil, -1e9
+
+-- free bytes and used fraction of the system disk, checked every 30 s
+local function system_disk()
+	if os.time() - disk_time >= 30 then
+		local avail, size = sh('df -B1 --output=avail,size / | tail -n 1'):match('(%d+)%s+(%d+)')
+		avail, size = tonumber(avail), tonumber(size)
+		disk_cache = (avail and size and size > 0) and {avail, 1 - avail / size} or nil
+		disk_time = os.time()
+	end
+	return disk_cache
+end
+
+-- colors of the dark and light versions
+local STATS_DARK = {
+	panel = {0.07, 0.11, 0.16, 0.50}, edge = {1, 1, 1, 0.07},
+	label = T.text, value = T.sub, track = {0, 0, 0, 0.30}, shadow = true,
+	c1 = {0.38, 0.84, 0.80}, -- teal
+	c2 = {0.72, 0.64, 1.00}, -- lavender
+}
+local STATS_LIGHT = {
+	panel = {0.97, 0.98, 0.99, 0.50}, edge = {0, 0, 0, 0.08},
+	label = {0.11, 0.14, 0.20, 1}, value = {0.11, 0.14, 0.20, 1}, track = {0.11, 0.14, 0.20, 0.10}, shadow = false,
+	c1 = {0.16, 0.70, 0.66}, -- deeper teal and lavender, to stand out on white
+	c2 = {0.52, 0.42, 0.96},
+}
+local stats_net = {down = {}, up = {}}
+
+-- flat pill bar: tinted track, c1 -> c2 fill
+local function thin_bar(cr, x, y, w, h, frac, c1, c2, track)
+	frac = G.clamp(frac or 0, 0, 1)
+	G.rrect(cr, x, y, w, h, h / 2)
+	G.rgba(cr, track)
+	cairo_fill(cr)
+	if frac > 0.002 then
+		local fw = math.max(h, w * frac)
+		G.rrect(cr, x, y, fw, h, h / 2)
+		local pat = cairo_pattern_create_linear(x, 0, x + w, 0)
+		cairo_pattern_add_color_stop_rgba(pat, 0, c1[1], c1[2], c1[3], 1)
+		cairo_pattern_add_color_stop_rgba(pat, 1, c2[1], c2[2], c2[3], 1)
+		cairo_set_source(cr, pat)
+		cairo_fill(cr)
+		cairo_pattern_destroy(pat)
+	end
+end
+
+-- compact panel: CPU, memory, system disk and network, each over a thin bar;
+-- pal is STATS_DARK or STATS_LIGHT
+local function stats(cr, w, h, pal)
+	local px, py, pw, ph = 6, 6, w - 12, h - 12
+	-- flat panel with a hairline edge
+	G.rrect(cr, px, py, pw, ph, 14)
+	G.rgba(cr, pal.panel)
+	cairo_fill_preserve(cr)
+	G.rgba(cr, pal.edge)
+	cairo_set_line_width(cr, 1)
+	cairo_stroke(cr)
+
+	local x, rx, bw = px + 14, px + pw - 14, pw - 28
+	-- labels are bold, values regular and dimmer
+	local function label_text(str, tx, ty, align, is_label, max_width)
+		return G.text(cr, str, tx, ty, {size = 13, weight = is_label and 'bold' or nil,
+			color = is_label and pal.label or pal.value, align = align, max_width = max_width, shadow = pal.shadow})
+	end
+	local function row(y, label, value, frac)
+		label_text(label, x, y, 'left', true)
+		if value then label_text(value, rx, y, 'right', false, bw * 0.62) end
+		if frac then thin_bar(cr, x, y + 9, bw, 5, frac, pal.c1, pal.c2, pal.track) end
+	end
+
+	local cpu = DEMO and 4 or num('${cpu cpu0}')
+	row(py + 26, 'CPU', string.format('%d%%', cpu), cpu / 100)
+
+	local used, total = meminfo()
+	if DEMO then used, total = 2.9e9, 16.4e9 end
+	row(py + 72, 'Memory', fmt_bytes(used) .. ' / ' .. fmt_bytes(total), total > 0 and used / total or 0)
+
+	local disk = DEMO and {1.9e12, 0.06} or system_disk()
+	row(py + 118, 'System disk', disk and (fmt_bytes(disk[1]) .. ' free') or '—', disk and disk[2] or 0)
+
+	-- network: speeds on the right, a bar each for down and up against their recent peak
+	local iface = SETTINGS.network_interface
+	if iface == '' then iface = trim(parse('${gw_iface}')) end
+	local y = py + 164
+	if not DEMO and (iface == '' or iface == 'multiple' or iface == '(null)') then
+		row(y, 'Network', 'offline', 0)
+		return
+	end
+	local down = DEMO and 1229 or num('${downspeedf ' .. iface .. '}')
+	local up = DEMO and 34 or num('${upspeedf ' .. iface .. '}')
+	push(stats_net.down, down)
+	push(stats_net.up, up)
+	local peak_down, peak_up = 1, 1
+	for _, v in ipairs(stats_net.down) do peak_down = math.max(peak_down, v) end
+	for _, v in ipairs(stats_net.up) do peak_up = math.max(peak_up, v) end
+
+	row(y, 'Network')
+	local up_w = label_text(fmt_rate(up), rx, y, 'right', false)
+	G.arrow(cr, rx - up_w - 7, y - 4.5, 9, 'up', pal.c2)
+	local dx = rx - up_w - 22
+	local down_w = label_text(fmt_rate(down), dx, y, 'right', false)
+	G.arrow(cr, dx - down_w - 7, y - 4.5, 9, 'down', pal.c1)
+	local half = (bw - 8) / 2
+	thin_bar(cr, x, y + 9, half, 5, down / peak_down, pal.c1, pal.c1, pal.track)
+	thin_bar(cr, x + half + 8, y + 9, half, 5, up / peak_up, pal.c2, pal.c2, pal.track)
+end
+
+function W.stats(cr, w, h) stats(cr, w, h, STATS_DARK) end
+function W.stats_light(cr, w, h) stats(cr, w, h, STATS_LIGHT) end
 
 ---------------------------------------------------------------- processes
 
