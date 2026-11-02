@@ -10,8 +10,8 @@ app_name=conky-manager3
 app_fullname="Conky Manager 3"
 
 all:
-	#build binaries
-	valac -X -D'GETTEXT_PACKAGE="${app_name}"' --Xcc="-lm" -X -Wl,-rpath,/usr/share/${app_name}/libs "Main.vala" "MainWindow.vala" "EditWidgetWindow.vala" "EditThemeWindow.vala" "Utility.vala" "Style.vala" "Pages.vala" "Updater.vala" -o ${app_name} --pkg glib-2.0 --pkg gio-unix-2.0 --pkg posix --pkg gtk+-3.0 --pkg gee-0.8 --pkg json-glib-1.0 
+	#build binaries; gnu17 and GLib 2.72 keep the binary running on Ubuntu 22.04 / Debian 12 (glibc 2.34)
+	valac --target-glib=2.72 -X -std=gnu17 -X -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_72 -X -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_72 -X -D'GETTEXT_PACKAGE="${app_name}"' --Xcc="-lm" -X -Wl,-rpath,/usr/share/${app_name}/libs "Main.vala" "MainWindow.vala" "EditWidgetWindow.vala" "EditThemeWindow.vala" "Utility.vala" "Style.vala" "Pages.vala" "Updater.vala" -o ${app_name} --pkg glib-2.0 --pkg gio-unix-2.0 --pkg posix --pkg gtk+-3.0 --pkg gee-0.8 --pkg json-glib-1.0 
 
 pot:
 	#update translation template

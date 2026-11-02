@@ -20,6 +20,7 @@ Run `src/conky-manager3` to try it without installing. Uninstall with `sudo ./in
 Release files:
 
 - `packaging/build-deb.sh` builds `dist/conky-manager3_<version>_<arch>.deb`
+- `packaging/build-rpm.sh` builds `dist/conky-manager3-<version>-1.<arch>.rpm` (needs `rpmbuild`)
 - `packaging/build-tarball.sh` builds `dist/conky-manager3-<version>-<arch>.tar.gz` with a prebuilt binary
 - `packaging/build-themepacks.sh` rebuilds the bundled widget packs from `themes/`
 
