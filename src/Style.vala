@@ -15,6 +15,9 @@ using TeeJee.Logging;
 namespace Style {
 
 	const string CSS = """
+/* GTK 3 draws entry placeholder text ("Search widgets") in this color, or a dim grey without it */
+@define-color placeholder_text_color rgba(255, 255, 255, 0.85);
+
 .cm {
   background-color: #2a1b47;
   background-image: linear-gradient(150deg, #4b2a7d 0%, #2a1b47 55%, #1a1230 100%);
@@ -43,7 +46,9 @@ namespace Style {
   color: rgba(255, 255, 255, 0.85);
 }
 headerbar.cm-header .title { color: rgba(255, 255, 255, 0.0); }
-headerbar.cm-header button { color: rgba(255, 255, 255, 0.85); background: transparent; border: none; box-shadow: none; }
+headerbar.cm-header button { color: rgba(255, 255, 255, 0.85); background-color: transparent; border: none; box-shadow: none; }
+/* Some themes (Breeze) draw title buttons as a sized background image, so only reset the image on other buttons */
+headerbar.cm-header button:not(.titlebutton) { background-image: none; }
 headerbar.cm-header button:hover { background-color: rgba(255, 255, 255, 0.12); }
 
 /* Sidebar ------------------------------------------------------------ */
@@ -53,6 +58,7 @@ headerbar.cm-header button:hover { background-color: rgba(255, 255, 255, 0.12); 
   padding: 0 10px 14px 10px;
 }
 .brand { font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
+.brand-version { font-size: 11px; color: rgba(255, 255, 255, 0.6); }
 list.nav, list.nav row { background: transparent; }
 list.nav row {
   padding: 9px 12px;
@@ -204,7 +210,7 @@ button.tab:checked label { color: #2a1b47; }
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .card list, .card viewport { background-color: transparent; }
-.card list row { padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.card list row { background-color: transparent; padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .card list row:last-child { border-bottom: none; }
 .card list row:hover { background-color: rgba(255, 255, 255, 0.05); }
 .card list row:selected { background-color: rgba(255, 255, 255, 0.14); }
@@ -298,6 +304,7 @@ button.tab:checked label { color: #2a1b47; }
 .cm spinbutton button { background: transparent; border: none; box-shadow: none; color: #ffffff; }
 .cm spinbutton button:hover { background: rgba(255, 255, 255, 0.14); }
 .cm entry selection { background-color: rgba(255, 255, 255, 0.35); }
+.cm entry image { color: #ffffff; }
 .cm combobox button, .cm combobox button.combo {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.18);
