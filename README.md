@@ -56,6 +56,12 @@ Get the files from the [latest release](https://github.com/thuutien/Conky-Manage
 sudo apt install ./conky-manager3_*_amd64.deb
 ```
 
+**Fedora, openSUSE** (installs Conky and everything else it needs):
+
+```bash
+sudo dnf install ./conky-manager3-*-1.x86_64.rpm
+```
+
 **Any distribution:**
 
 ```bash
@@ -107,7 +113,7 @@ make -C src
 sudo ./install.sh
 ```
 
-To run it without installing, start `src/conky-manager3`. Release packages are built with `packaging/build-deb.sh`, `packaging/build-tarball.sh` and `packaging/build-themepacks.sh`.
+To run it without installing, start `src/conky-manager3`. Release packages are built with `packaging/build-deb.sh`, `packaging/build-rpm.sh`, `packaging/build-tarball.sh` and `packaging/build-themepacks.sh`.
 
 ## Credits and license
 

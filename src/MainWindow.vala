@@ -240,7 +240,11 @@ public class MainWindow : Window {
 			logo.set_from_surface(Gdk.cairo_surface_create_from_pixbuf(pix, scale_factor, null));
 		}
 		brand.pack_start(logo, false, false, 0);
-		brand.pack_start(Style.label(AppName, "brand"), false, false, 0);
+		var brand_texts = new Box(Orientation.VERTICAL, 0);
+		brand_texts.valign = Align.CENTER;
+		brand_texts.pack_start(Style.label(AppName, "brand"), false, false, 0);
+		brand_texts.pack_start(Style.label(_("Version %s").printf(AppVersion), "brand-version"), false, false, 0);
+		brand.pack_start(brand_texts, false, false, 0);
 		sidebar.pack_start(brand, false, false, 0);
 
 		nav = new ListBox();

@@ -1,4 +1,7 @@
-project('conky-manager3', ['c','vala'])
+project('conky-manager3', ['c','vala'], default_options : ['c_std=gnu17'])
+
+# keep the binary running on Ubuntu 22.04 / Debian 12 (GLib 2.72, glibc 2.34)
+add_project_arguments('-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_72', '-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_72', language : 'c')
 
 prefix = '/usr'
 bindir = prefix + '/bin'
@@ -47,4 +50,5 @@ subdir('po')
 #    )
 #endif
 
-executable('conky-manager3', sources, install : true, dependencies: dependencies)
+executable('conky-manager3', sources, install : true, dependencies: dependencies,
+           vala_args: ['--target-glib=2.72'])

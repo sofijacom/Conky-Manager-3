@@ -37,10 +37,14 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.5.0";
+public const string AppVersion = "3.5.1";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
+
+/* Conky 1.2x picks its Wayland output on Wayland sessions, which crashes on KDE and
+ * can't place widgets on the desktop; hide the Wayland session so it uses X11 (XWayland) */
+const string CONKY_CMD = "env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 conky";
 
 public class Main : GLib.Object {
 
@@ -653,7 +657,7 @@ public class Main : GLib.Object {
 		foreach(ConkyRC conf in conkyrc_list){
 			if (conf.enabled){
 				txt_start_conky += "   cd \"" + conf.dir.replace(home, "$HOME")  + "\"\n";
-				txt_start_conky += "   conky -c \"" + conf.path.replace(home, "$HOME") + "\" &\n";
+				txt_start_conky += "   " + CONKY_CMD + " -c \"" + conf.path.replace(home, "$HOME") + "\" &\n";
 				atleast_one_widget_enabled = true;
 			}
 		}
@@ -997,7 +1001,7 @@ public class ConkyRC : ConkyConfigItem {
 		//Theme.install();
 
 		cmd = "cd \"" + dir + "\"\n";
-		cmd += "conky -c \"" + path + "\" >/dev/null 2>&1\n";
+		cmd += CONKY_CMD + " -c \"" + path + "\" >/dev/null 2>&1\n";
 
 		execute_command_script_async(cmd);
 		log_debug(_("Started") + ": " + path);
@@ -1017,7 +1021,7 @@ public class ConkyRC : ConkyConfigItem {
 		//Theme.install();
 
 		cmd = "cd \"" + dir + "\"\n";
-		cmd += "conky -c \"" + path + "\"\n";
+		cmd += CONKY_CMD + " -c \"" + path + "\"\n";
 
 		execute_command_script_in_terminal_sync( create_temp_bash_script(cmd) );
 
@@ -1130,7 +1134,7 @@ public class ConkyRC : ConkyConfigItem {
 	 * the window ID. Returns false if conky could not be started. */
 	private bool start_preview_conky(){
 		string cmd = "cd \"" + dir + "\"\n";
-		cmd += "conky -c \"" + path + "~temp~\" 2>&1 \n";
+		cmd += CONKY_CMD + " -c \"" + path + "~temp~\" 2>&1 \n";
 
 		string[] argv = new string[1];
 		argv[0] = create_temp_bash_script(cmd);

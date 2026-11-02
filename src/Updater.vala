@@ -3,7 +3,7 @@
  *
  * Checks GitHub for new Conky Manager 3 releases and installs them.
  * The check and download run as the user (with curl); only the final install
- * of a .deb or tarball goes through pkexec. Downloads are verified against the
+ * of a .deb, .rpm or tarball goes through pkexec. Downloads are verified against the
  * SHA-256 digest GitHub publishes for each release asset.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -134,7 +134,7 @@ namespace Updater {
 
 	/* ------------------------------------------------------------ installing */
 
-	/* "deb", "tarball", "package" (another package manager) or "manual" (from source) */
+	/* "deb", "rpm", "tarball", "package" (another package manager) or "manual" (from source) */
 	public string install_method() {
 		if (exe_path != INSTALLED_BINARY) {
 			return "manual";
@@ -146,13 +146,24 @@ namespace Updater {
 				return "deb";
 			}
 		}
-		foreach (string cmd in new string[]{ "pacman -Qq conky-manager3", "rpm -q conky-manager3" }) {
-			string tool = cmd.split(" ")[0];
-			if (Environment.find_program_in_path(tool) != null && execute_command_script_sync(cmd, out std_out, out std_err) == 0) {
-				return "package";
-			}
+		if (Environment.find_program_in_path("pacman") != null && execute_command_script_sync("pacman -Qq conky-manager3", out std_out, out std_err) == 0) {
+			return "package";
+		}
+		if (Environment.find_program_in_path("rpm") != null && execute_command_script_sync("rpm -q conky-manager3", out std_out, out std_err) == 0) {
+			return rpm_installer() != null ? "rpm" : "package";
 		}
 		return "tarball";
+	}
+
+	/* the command that installs a local .rpm with its dependencies, or null */
+	string[]? rpm_installer() {
+		if (Environment.find_program_in_path("dnf") != null) {
+			return { "dnf", "install", "-y" };
+		}
+		if (Environment.find_program_in_path("zypper") != null) {
+			return { "zypper", "--non-interactive", "install", "--allow-unsigned-rpm" };
+		}
+		return null;
 	}
 
 	string command_output(string cmd) {
@@ -166,6 +177,9 @@ namespace Updater {
 		string name = "";
 		if (method == "deb") {
 			name = "conky-manager3_%s_%s.deb".printf(rel.version, command_output("dpkg --print-architecture"));
+		}
+		else if (method == "rpm") {
+			name = "conky-manager3-%s-1.%s.rpm".printf(rel.version, command_output("uname -m"));
 		}
 		else if (method == "tarball") {
 			name = "conky-manager3-%s-%s.tar.gz".printf(rel.version, command_output("uname -m"));
@@ -262,6 +276,13 @@ namespace Updater {
 			string[] argv;
 			if (method == "deb") {
 				argv = { "pkexec", "apt-get", "install", "-y", path };
+			}
+			else if (method == "rpm") {
+				argv = { "pkexec" };
+				foreach (string arg in rpm_installer()) {
+					argv += arg;
+				}
+				argv += path;
 			}
 			else {
 				string script = yield unpack_tarball(path, dir);
