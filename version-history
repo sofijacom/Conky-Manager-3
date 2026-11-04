@@ -8,6 +8,7 @@
 **v2.7** Fix 'Edit Widget' now includes network interface replacement for conky 'if_up' and 'addr' variables.
 **v2.72** French and German translations, lua detection additions, meson vscode and small fixes.
 **v2.73** Korean translation, debian packaging updates, add quality icon artwork.
+**v3.5.2** Widgets you turned on start again after a restart in KDE Plasma Wayland sessions: the login script no longer keeps an old copy of your widget list each time you close the app, so the Calendar Clock (or any widget added later) no longer goes missing at login.
 **v3.5.1** Widgets no longer switch themselves off a few seconds after you turn them on in Wayland sessions (KDE Plasma, GNOME): Conky now runs through XWayland. Search text is white and easy to read, the sidebar shows the version, and with the Breeze theme the window buttons and the Settings page draw correctly. New .rpm package for Fedora and openSUSE.
 **v3.5.0** New Quick Stats widgets in the Liquid Glass pack: a compact panel with CPU, memory and system disk usage bars plus network download/upload speeds, in a dark version and a light version for light wallpapers.
 **v3.4.2** Transparency settings in Edit Position and Look work again: opacity starts at 100% instead of 0%, and changing the transparency type (or resetting it) restarts the widget so the change shows.
