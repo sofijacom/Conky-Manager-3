@@ -37,7 +37,7 @@ using TeeJee.Misc;
 public Main App;
 public const string AppName = "Conky Manager 3";
 public const string AppShortName = "conky-manager3";
-public const string AppVersion = "3.5.1";
+public const string AppVersion = "3.5.2";
 
 const string GETTEXT_PACKAGE = "conky-manager3";
 const string LOCALE_DIR = "/usr/share/locale";
@@ -675,7 +675,13 @@ public class Main : GLib.Object {
 		string std_err = "";
 		
 		string cmd1 = "grep  -sq -E '^[[:space:]]*if[[:space:]]+\\[[[:space:]]+\"?\\$\\{?DESKTOP_SESSION\\}?\"?' \"%s\" || rm  \"%s\"".printf (startupScript, startupScript);
-		string cmd2 = "sed -i -r '/^[[:space:]]*if[[:space:]]+\\[[[:space:]]+\"?\\$\\{?DESKTOP_SESSION\\}?\"?[[:space:]]*==?[[:space:]]*\"%s\"[[:space:]]+\\]/,/^[[:space:]]*fi/d' \"%s\"".printf (desktop_session, startupScript);
+		// DESKTOP_SESSION can be a path (Plasma Wayland), so escape it for the sed pattern
+		string session_pattern = desktop_session.replace("\\", "\\\\");
+		foreach (string c in new string[] { "/", ".", "[", "]", "*", "^", "$", "(", ")", "+", "?", "{", "}", "|" }){
+			session_pattern = session_pattern.replace(c, "\\" + c);
+		}
+		session_pattern = session_pattern.replace("'", "'\\''");
+		string cmd2 = "sed -i -r '/^[[:space:]]*if[[:space:]]+\\[[[:space:]]+\"?\\$\\{?DESKTOP_SESSION\\}?\"?[[:space:]]*==?[[:space:]]*\"%s\"[[:space:]]+\\]/,/^[[:space:]]*fi/d' \"%s\"".printf (session_pattern, startupScript);
 
 		if (file_exists(startupScript)){
 			execute_command_script_sync(cmd1, out std_out, out std_err);
